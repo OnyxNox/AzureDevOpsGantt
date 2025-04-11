@@ -5,15 +5,15 @@ use reqwest::{
     header::{ACCEPT, AUTHORIZATION, HeaderMap, HeaderValue},
 };
 
-use crate::models::{Configuration, WorkItem};
+use crate::models::{Context, WorkItem};
 
 const AZURE_DEV_OPS_API_VERSION: &str = "api-version=7.1";
 const AZURE_DEV_OPS_DOMAIN: &str = "https://dev.azure.com";
 
 /// HTTP client used to interface with Azure DevOps APIs.
 pub struct AzureDevOpsClient {
-    /// Configuration context.
-    configuration: Configuration,
+    /// Context.
+    context: Context,
 
     /// Underlying reqwest HTTP client.
     http_client: Client,
@@ -21,11 +21,11 @@ pub struct AzureDevOpsClient {
 
 impl AzureDevOpsClient {
     /// Initialize a new AzureDevOpsClient instance.
-    pub fn new(configuration: Configuration) -> Self {
+    pub fn new(context: Context) -> Self {
         trace!("Initializing Azure DevOps client.");
 
         let azure_dev_ops_client = Self {
-            configuration,
+            context,
             http_client: Client::new(),
         };
 
@@ -39,8 +39,8 @@ impl AzureDevOpsClient {
         self.get(&format!(
             "{}/{}/{}/_apis/wit/workitems/{}?{}",
             AZURE_DEV_OPS_DOMAIN,
-            self.configuration.organization,
-            self.configuration.project,
+            self.context.organization_name,
+            self.context.project_name,
             work_item_id,
             AZURE_DEV_OPS_API_VERSION
         ))
@@ -77,7 +77,7 @@ impl AzureDevOpsClient {
                 "Basic {}",
                 base64::engine::general_purpose::STANDARD.encode(format!(
                     "{}:{}",
-                    self.configuration.user, self.configuration.access_token
+                    self.context.user_email, self.context.personal_access_token
                 ))
             ))
             .expect("failed to parse authorization header"),
