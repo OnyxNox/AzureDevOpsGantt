@@ -1,5 +1,6 @@
 {
     "user": "USER_EMAIL_ADDRESS",
     "organization": "ORGANIZATION_NAME",
+    "project": "PROJECT_NAME",
     "access_token": "PERSONAL_ACCESS_TOKEN"
 }

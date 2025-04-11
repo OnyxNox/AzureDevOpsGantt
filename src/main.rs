@@ -27,9 +27,11 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
 
     let azure_dev_ops_client = AzureDevOpsClient::new(read_configuration());
 
-    let projects_response = azure_dev_ops_client.projects().await?;
+    let work_item = azure_dev_ops_client
+        .work_item(cli_arguments.root_work_item_id)
+        .await?;
 
-    info!("Project Count: {}", projects_response.count);
+    info!("Work Item ID: {}", work_item.id);
 
     Ok(())
 }
