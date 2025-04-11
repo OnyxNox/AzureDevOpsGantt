@@ -1,6 +1,8 @@
+mod azure_dev_ops_client;
 mod models;
 
 use std::{
+    error,
     fs::File,
     io::{BufReader, Write},
 };
@@ -8,17 +10,22 @@ use std::{
 use chrono::Utc;
 use log::{LevelFilter, debug, info, trace};
 
-use crate::models::Configuration;
+use crate::{azure_dev_ops_client::AzureDevOpsClient, models::Configuration};
 
 /// Application entry point.
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn error::Error>> {
     initialize_logger();
 
     info!("Welcome to the Azure DevOps Gantt tool!");
 
-    let configuration = read_configuration();
+    let azure_dev_ops_client = AzureDevOpsClient::new(read_configuration());
 
-    info!("Configuration Organization: {}", configuration.organization);
+    let projects_response = azure_dev_ops_client.projects().await?;
+
+    info!("Project Count: {}", projects_response.count);
+
+    Ok(())
 }
 
 /// Initialize logger to be used throughout the application.

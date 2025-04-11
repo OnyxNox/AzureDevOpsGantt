@@ -8,4 +8,13 @@ pub struct Configuration {
 
     /// Azure DevOps organization that work items are under.
     pub organization: String,
+
+    /// Azure DevOps user's email address used to authenticate requests.
+    pub user: String,
+}
+
+/// Represents a HTTP response from Azure DevOps.
+#[derive(Debug, Deserialize)]
+pub struct Response {
+    pub count: u32,
 }
