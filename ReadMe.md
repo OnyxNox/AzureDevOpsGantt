@@ -10,6 +10,12 @@ cargo run
 
 ## Crates
 
+- [Base64](https://github.com/marshallpierce/rust-base64) is a framework for encoding and decoding Base64 strings.
 - [Chrono](https://github.com/chronotope/chrono) provides timezone-aware date and time operations.
 - [Env Logger](https://github.com/rust-cli/env_logger) is a logger.
 - [Log](https://github.com/rust-lang/log) is a logging facade.
+- [Reqwest](https://github.com/seanmonstar/reqwest) is an ergonomic HTTP-client.
+- [Serde](https://github.com/serde-rs/serde) is a framework for serializing and deserializing data structures.
+- [Serde JSON](https://github.com/serde-rs/json) is a Serde extension that enables serializing and deserializing JSON format.
+- [Tokio](https://github.com/tokio-rs/tokio) is an asynchronous runtime.
+- [Tokio Macros](https://github.com/tokio-rs/tokio/tree/master/tokio-macros) are macros for use with Tokio.
