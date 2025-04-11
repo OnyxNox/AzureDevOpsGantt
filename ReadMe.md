@@ -10,4 +10,6 @@ cargo run
 
 ## Crates
 
-None
+- [Chrono](https://github.com/chronotope/chrono) provides timezone-aware date and time operations.
+- [Env Logger](https://github.com/rust-cli/env_logger) is a logger.
+- [Log](https://github.com/rust-lang/log) is a logging facade.
