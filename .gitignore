@@ -3,7 +3,9 @@
 
 # Application input/output data directory
 /.data/*
-!/.data/configuration.template.json
+
+# Application context template JSON file
+!/.data/context.template.json
 
 # Rust binary output directory
 /target

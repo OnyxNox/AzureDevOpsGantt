@@ -15,20 +15,20 @@ pub struct CliArguments {
     pub root_work_item_id: u32,
 }
 
-/// Represents a configuration file.
+/// Represents a context file.
 #[derive(Debug, Deserialize)]
-pub struct Configuration {
-    /// Personal access token used to authenticate requests.
-    pub access_token: String,
-
+pub struct Context {
     /// Azure DevOps organization that work items are under.
-    pub organization: String,
+    pub organization_name: String,
+
+    /// Personal access token used to authenticate requests.
+    pub personal_access_token: String,
 
     /// Azure DevOps organization's project that work items are under.
-    pub project: String,
+    pub project_name: String,
 
     /// Azure DevOps user's email address used to authenticate requests.
-    pub user: String,
+    pub user_email: String,
 }
 
 /// Represents a work item in Azure DevOps.

@@ -13,7 +13,7 @@ use log::{LevelFilter, debug, info, trace};
 
 use crate::{
     azure_dev_ops_client::AzureDevOpsClient,
-    models::{CliArguments, Configuration},
+    models::{CliArguments, Context},
 };
 
 /// Application entry point.
@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
 
     info!("Welcome to the Azure DevOps Gantt tool!");
 
-    let azure_dev_ops_client = AzureDevOpsClient::new(read_configuration());
+    let azure_dev_ops_client = AzureDevOpsClient::new(read_context());
 
     let work_item = azure_dev_ops_client
         .work_item(cli_arguments.root_work_item_id)
@@ -55,23 +55,19 @@ fn initialize_logger(level: &LevelFilter) {
     trace!("Application logger has been initialized!");
 }
 
-/// Read in the configuration file.
-fn read_configuration() -> Configuration {
-    let configuration_file_path = "./.data/configuration.json";
+/// Read in the context file.
+fn read_context() -> Context {
+    let context_file_path = "./.data/context.json";
 
-    debug!(
-        "Reading in the configuration file. File Path: {}",
-        configuration_file_path
-    );
+    debug!("Reading the context file. File Path: {}", context_file_path);
 
-    let configuration_file =
-        File::open(configuration_file_path).expect("failed to open the configuration file");
-    let configuration_file_reader = BufReader::new(configuration_file);
+    let context_file = File::open(context_file_path).expect("failed to open the context file");
+    let context_file_reader = BufReader::new(context_file);
 
-    let configuration = serde_json::from_reader(configuration_file_reader)
-        .expect("failed to parse the configuration file");
+    let context =
+        serde_json::from_reader(context_file_reader).expect("failed to parse the context file");
 
-    info!("Configuration file has been read in successfully!");
+    info!("Context file has been read successfully!");
 
-    configuration
+    context
 }
