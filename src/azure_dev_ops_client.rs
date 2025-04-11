@@ -14,6 +14,7 @@ pub struct AzureDevOpsClient {
     /// Configuration context.
     configuration: Configuration,
 
+    /// Underlying reqwest HTTP client.
     http_client: Client,
 }
 

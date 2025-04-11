@@ -28,5 +28,6 @@ pub struct Configuration {
 /// Represents a HTTP response from Azure DevOps.
 #[derive(Debug, Deserialize)]
 pub struct Response {
+    /// Number of records in the response's value payload.
     pub count: u32,
 }
