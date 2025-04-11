@@ -5,8 +5,9 @@ use reqwest::{
     header::{ACCEPT, AUTHORIZATION, HeaderMap, HeaderValue},
 };
 
-use crate::models::{Configuration, Response};
+use crate::models::{Configuration, WorkItem};
 
+const AZURE_DEV_OPS_API_VERSION: &str = "api-version=7.1";
 const AZURE_DEV_OPS_DOMAIN: &str = "https://dev.azure.com";
 
 /// HTTP client used to interface with Azure DevOps APIs.
@@ -33,14 +34,18 @@ impl AzureDevOpsClient {
         azure_dev_ops_client
     }
 
-    /// Get all projects under the organization.
-    pub async fn projects(&self) -> Result<Response, reqwest::Error> {
+    /// Get work item by identifier.
+    pub async fn work_item(&self, work_item_id: u32) -> Result<WorkItem, reqwest::Error> {
         self.get(&format!(
-            "{}/{}/_apis/projects?api-version=1.0",
-            AZURE_DEV_OPS_DOMAIN, self.configuration.organization
+            "{}/{}/{}/_apis/wit/workitems/{}?{}",
+            AZURE_DEV_OPS_DOMAIN,
+            self.configuration.organization,
+            self.configuration.project,
+            work_item_id,
+            AZURE_DEV_OPS_API_VERSION
         ))
         .await?
-        .json::<Response>()
+        .json::<WorkItem>()
         .await
     }
 

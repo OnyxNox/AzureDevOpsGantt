@@ -10,6 +10,9 @@ pub struct CliArguments {
     /// warn, info, debug, trace
     #[arg(short, long, global = true, default_value_t = LevelFilter::Info)]
     pub log_level: LevelFilter,
+
+    /// Azure DevOps root work item identifier.
+    pub root_work_item_id: u32,
 }
 
 /// Represents a configuration file.
@@ -21,13 +24,16 @@ pub struct Configuration {
     /// Azure DevOps organization that work items are under.
     pub organization: String,
 
+    /// Azure DevOps organization's project that work items are under.
+    pub project: String,
+
     /// Azure DevOps user's email address used to authenticate requests.
     pub user: String,
 }
 
-/// Represents a HTTP response from Azure DevOps.
+/// Represents a work item in Azure DevOps.
 #[derive(Debug, Deserialize)]
-pub struct Response {
-    /// Number of records in the response's value payload.
-    pub count: u32,
+pub struct WorkItem {
+    /// Azure DevOps work item identifier.
+    pub id: u32,
 }
