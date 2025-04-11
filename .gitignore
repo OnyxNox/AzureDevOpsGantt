@@ -1,5 +1,9 @@
 # Generic ignore
 *.ignore.*
 
+# Application input/output data directory
+/.data/*
+!/.data/configuration.template.json
+
 # Rust binary output directory
 /target
