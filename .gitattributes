@@ -1,0 +1,5 @@
+# Set end-of-line (EOL) for all text files to LF
+* text eol=lf
+
+# Treat image files as binary files
+*.png binary
