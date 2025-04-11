@@ -8,14 +8,20 @@ use std::{
 };
 
 use chrono::Utc;
+use clap::Parser;
 use log::{LevelFilter, debug, info, trace};
 
-use crate::{azure_dev_ops_client::AzureDevOpsClient, models::Configuration};
+use crate::{
+    azure_dev_ops_client::AzureDevOpsClient,
+    models::{CliArguments, Configuration},
+};
 
 /// Application entry point.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn error::Error>> {
-    initialize_logger();
+    let cli_arguments = CliArguments::parse();
+
+    initialize_logger(&cli_arguments.log_level);
 
     info!("Welcome to the Azure DevOps Gantt tool!");
 
@@ -29,7 +35,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
 }
 
 /// Initialize logger to be used throughout the application.
-fn initialize_logger() {
+fn initialize_logger(level: &LevelFilter) {
     env_logger::Builder::new()
         .format(|buffer, record| {
             writeln!(
@@ -40,7 +46,7 @@ fn initialize_logger() {
                 record.args(),
             )
         })
-        .filter_module(env!("CARGO_PKG_NAME"), LevelFilter::Trace)
+        .filter_module(env!("CARGO_PKG_NAME"), *level)
         .filter_level(LevelFilter::Off)
         .init();
 

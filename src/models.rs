@@ -1,4 +1,16 @@
+use clap::Parser;
+use log::LevelFilter;
 use serde::Deserialize;
+
+/// Welcome to Azure DevOps Gantt tool!
+#[derive(Debug, Parser)]
+#[command(version, about, long_about = None)]
+pub struct CliArguments {
+    /// Set the level of logging; sometimes referred to as "verbosity." Valid Values: off, error,
+    /// warn, info, debug, trace
+    #[arg(short, long, global = true, default_value_t = LevelFilter::Info)]
+    pub log_level: LevelFilter,
+}
 
 /// Represents a configuration file.
 #[derive(Debug, Deserialize)]

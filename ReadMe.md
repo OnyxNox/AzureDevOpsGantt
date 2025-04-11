@@ -5,13 +5,14 @@ The **Azure DevOps Gantt (A-DOG)** tool is used to generate a [Mermaid JS](https
 ## Usage
 
 ```shell
-cargo run
+cargo run -- --help
 ```
 
 ## Crates
 
 - [Base64](https://github.com/marshallpierce/rust-base64) is a framework for encoding and decoding Base64 strings.
 - [Chrono](https://github.com/chronotope/chrono) provides timezone-aware date and time operations.
+- [Clap](https://github.com/clap-rs/clap) is a command-line argument parser.
 - [Env Logger](https://github.com/rust-cli/env_logger) is a logger.
 - [Log](https://github.com/rust-lang/log) is a logging facade.
 - [Reqwest](https://github.com/seanmonstar/reqwest) is an ergonomic HTTP-client.
