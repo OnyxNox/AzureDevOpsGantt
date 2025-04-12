@@ -54,8 +54,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
         debug!("Related Work Item URL: {}", work_item_relation.url);
     }
 
-    info!("Gantt diagram has been generated successfully!");
-    info!("Jobs done.");
+    info!("Gantt diagram has been generated successfully! Jobs done.");
 
     Ok(())
 }
