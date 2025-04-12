@@ -5,11 +5,12 @@ use std::{
     error,
     fs::File,
     io::{BufReader, Write},
+    path::PathBuf,
 };
 
 use chrono::Utc;
 use clap::Parser;
-use log::{LevelFilter, debug, info, trace};
+use log::{LevelFilter, debug, error, info, trace};
 
 use crate::{
     azure_dev_ops_client::AzureDevOpsClient,
@@ -23,17 +24,29 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
 
     initialize_logger(&cli_arguments.log_level);
 
+    debug!("{:?}", cli_arguments);
+
     info!("Welcome to the Azure DevOps Gantt tool!");
 
-    let azure_dev_ops_client = AzureDevOpsClient::new(read_context());
+    let azure_dev_ops_client =
+        AzureDevOpsClient::new(read_context(&cli_arguments.context_file_path));
 
     let work_item = azure_dev_ops_client
         .work_item(cli_arguments.feature_work_item_id)
         .await?;
 
+    if work_item.fields.work_item_type != "Feature" {
+        error!(
+            "Input work item (ID: {}) type must be of type 'Feature'. Work Item Type: {}",
+            cli_arguments.feature_work_item_id, work_item.fields.work_item_type
+        );
+
+        return Ok(());
+    }
+
     info!(
-        "Generating Gantt diagram for the '{}' {}.",
-        work_item.fields.title, work_item.fields.work_item_type
+        "Generating Gantt diagram for the '{}' feature.",
+        work_item.fields.title
     );
 
     for work_item_relation in work_item.relations {
@@ -66,10 +79,11 @@ fn initialize_logger(level: &LevelFilter) {
 }
 
 /// Read in the context file.
-fn read_context() -> Context {
-    let context_file_path = "./.data/context.json";
-
-    debug!("Reading the context file. File Path: {}", context_file_path);
+fn read_context(context_file_path: &PathBuf) -> Context {
+    debug!(
+        "Reading the context file. File Path: {}",
+        context_file_path.display()
+    );
 
     let context_file = File::open(context_file_path).expect("failed to open the context file");
     let context_file_reader = BufReader::new(context_file);

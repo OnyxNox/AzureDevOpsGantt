@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::Parser;
 use log::LevelFilter;
 use serde::Deserialize;
@@ -8,6 +10,10 @@ use serde::Deserialize;
 pub struct CliArguments {
     /// Azure DevOps feature work item identifier.
     pub feature_work_item_id: u32,
+
+    /// Set the context's file path.
+    #[arg(short, long = "context-path", default_value = "./.data/context.json")]
+    pub context_file_path: PathBuf,
 
     /// Set the level of logging; sometimes referred to as "verbosity." Valid Values: off, error,
     /// warn, info, debug, trace
