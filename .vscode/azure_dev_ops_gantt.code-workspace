@@ -25,6 +25,7 @@
                 "args": [
                     "--log-level",
                     "trace",
+                    "--log-responses",
                     "1"
                 ],
                 "stopAtEntry": false
