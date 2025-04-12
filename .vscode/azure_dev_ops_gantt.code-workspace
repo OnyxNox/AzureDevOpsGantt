@@ -22,7 +22,11 @@
                 "preLaunchTask": "build",
                 "program": "${workspaceRoot}/target/debug/azure_dev_ops_gantt.exe",
                 "cwd": "${workspaceRoot}",
-                "args": [],
+                "args": [
+                    "--log-level",
+                    "trace",
+                    "1"
+                ],
                 "stopAtEntry": false
             },
         ]
