@@ -7,7 +7,7 @@ use reqwest::{
 
 use crate::{
     extensions::ResponseExtensions,
-    models::{Context, WorkItem},
+    models::{BulkResponse, Context, WorkItem},
 };
 
 const AZURE_DEV_OPS_API_VERSION: &str = "api-version=7.1";
@@ -15,10 +15,10 @@ const AZURE_DEV_OPS_DOMAIN: &str = "https://dev.azure.com";
 
 /// HTTP client used to interface with Azure DevOps APIs.
 pub struct AzureDevOpsClient {
-    /// Context.
+    /// Azure DevOps context.
     context: Context,
 
-    /// Headers used across all requests.
+    /// Request headers.
     headers: HeaderMap,
 
     /// Underlying reqwest HTTP client.
@@ -68,18 +68,40 @@ impl AzureDevOpsClient {
 
         debug!("GET {} - {}", request_url, response.status());
 
-        Ok(response.error_for_status()?)
+        response.error_for_status()
     }
 
-    /// Get work item by identifier.
+    /// Get work item by its identifier.
     pub async fn work_item(&self, work_item_id: u32) -> reqwest::Result<WorkItem> {
+        let work_item = self
+            .work_items(vec![work_item_id])
+            .await?
+            .value
+            .into_iter()
+            .next()
+            .expect("failed to get first work item from bulk response");
+
+        Ok(work_item)
+    }
+
+    /// Get work items by their identifiers.
+    pub async fn work_items(
+        &self,
+        work_item_ids: Vec<u32>,
+    ) -> reqwest::Result<BulkResponse<WorkItem>> {
+        let work_item_ids = work_item_ids
+            .iter()
+            .map(|number| number.to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+
         self.get(&format!(
-            "{}/{}/{}/_apis/wit/workitems/{}?{}&$expand=relations",
+            "{}/{}/{}/_apis/wit/workitems?{}&ids={}&$expand=relations",
             AZURE_DEV_OPS_DOMAIN,
             self.context.organization_name,
             self.context.project_name,
-            work_item_id,
-            AZURE_DEV_OPS_API_VERSION
+            AZURE_DEV_OPS_API_VERSION,
+            work_item_ids,
         ))
         .await?
         .json()
