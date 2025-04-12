@@ -32,14 +32,14 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
     let azure_dev_ops_client =
         AzureDevOpsClient::new(read_context(&cli_arguments.context_file_path));
 
-    let work_item = azure_dev_ops_client
+    let feature_work_item = azure_dev_ops_client
         .work_item(cli_arguments.feature_work_item_id)
         .await?;
 
-    if work_item.fields.work_item_type != "Feature" {
+    if feature_work_item.fields.work_item_type != "Feature" {
         error!(
             "Input work item (ID: {}) type must be of type 'Feature'. Work Item Type: {}",
-            cli_arguments.feature_work_item_id, work_item.fields.work_item_type
+            cli_arguments.feature_work_item_id, feature_work_item.fields.work_item_type
         );
 
         return Ok(());
@@ -47,11 +47,36 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
 
     info!(
         "Generating Gantt diagram for the '{}' feature.",
-        work_item.fields.title
+        feature_work_item.fields.title
     );
 
-    for work_item_relation in work_item.relations {
-        debug!("Related Work Item URL: {}", work_item_relation.url);
+    let child_work_item_ids = feature_work_item
+        .relations
+        .iter()
+        .filter(|work_item_relation| work_item_relation.attributes.relation_type == "Child")
+        .map(|child_work_item| {
+            child_work_item
+                .url
+                .split('/')
+                .last()
+                .expect("failed to get path's last segment")
+                .parse()
+                .expect("failed to parse path's last segment")
+        })
+        .collect::<Vec<_>>();
+
+    info!(
+        "Feature has {} child work item(s).",
+        child_work_item_ids.len()
+    );
+
+    let child_work_items = azure_dev_ops_client
+        .work_items(child_work_item_ids)
+        .await?
+        .value;
+
+    for child_work_item in child_work_items {
+        info!("Child Work Item Title: {}", child_work_item.fields.title);
     }
 
     info!("Gantt diagram has been generated successfully! Jobs done.");
@@ -78,20 +103,21 @@ fn initialize_logger(level: &LevelFilter) {
     trace!("Application logger has been initialized!");
 }
 
-/// Read in the context file.
+/// Read in the Azure DevOps context file.
 fn read_context(context_file_path: &PathBuf) -> Context {
     debug!(
-        "Reading the context file. File Path: {}",
+        "Reading the Azure DevOps context file. File Path: {}",
         context_file_path.display()
     );
 
-    let context_file = File::open(context_file_path).expect("failed to open the context file");
+    let context_file =
+        File::open(context_file_path).expect("failed to open the Azure DevOps context file");
     let context_file_reader = BufReader::new(context_file);
 
-    let context =
-        serde_json::from_reader(context_file_reader).expect("failed to parse the context file");
+    let context = serde_json::from_reader(context_file_reader)
+        .expect("failed to parse the Azure DevOps context file");
 
-    info!("Context file has been read successfully!");
+    info!("Azure DevOps context file has been read successfully!");
 
     context
 }

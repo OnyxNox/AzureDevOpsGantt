@@ -4,6 +4,13 @@ use clap::Parser;
 use log::LevelFilter;
 use serde::Deserialize;
 
+/// Represents a generic response from a bulk endpoint.
+#[derive(Debug, Deserialize)]
+pub struct BulkResponse<T> {
+    /// Collection of entities from a bulk endpoint.
+    pub value: Vec<T>,
+}
+
 /// Welcome to Azure DevOps Gantt tool!
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
@@ -11,7 +18,7 @@ pub struct CliArguments {
     /// Azure DevOps feature work item identifier.
     pub feature_work_item_id: u32,
 
-    /// Set the context's file path.
+    /// Set the Azure DevOps context's file path.
     #[arg(short, long = "context-path", default_value = "./.data/context.json")]
     pub context_file_path: PathBuf,
 
@@ -21,7 +28,7 @@ pub struct CliArguments {
     pub log_level: LevelFilter,
 }
 
-/// Represents a context file.
+/// Represents an Azure DevOps context file.
 #[derive(Debug, Deserialize)]
 pub struct Context {
     /// Azure DevOps organization that work items are under.
@@ -37,30 +44,42 @@ pub struct Context {
     pub user_email: String,
 }
 
-/// Represents a work item in Azure DevOps.
+/// Represents a work item.
 #[derive(Debug, Deserialize)]
 pub struct WorkItem {
-    /// Collection of Azure DevOps work item fields.
+    /// Collection of work item fields.
     pub fields: WorkItemFields,
 
-    /// Collection of related Azure DevOps work items.
+    /// Collection of related work items.
     pub relations: Vec<WorkItemRelation>,
 }
 
+/// Represents a collection of work item fields.
 #[derive(Debug, Deserialize)]
 pub struct WorkItemFields {
-    /// Azure DevOps work item title.
+    /// Work item title.
     #[serde(rename = "System.Title")]
     pub title: String,
 
-    /// Azure DevOps work item type.
+    /// Work item type.
     #[serde(rename = "System.WorkItemType")]
     pub work_item_type: String,
 }
 
-/// Represents a work item relationship in Azure DevOps.
+/// Represents a work item relationship.
 #[derive(Debug, Deserialize)]
 pub struct WorkItemRelation {
+    /// Collection of work item relationship attributes.
+    pub attributes: WorkItemRelationAttributes,
+
     /// Direct link to the related work item.
     pub url: String,
+}
+
+/// Represents a collection of work item relationship attributes.
+#[derive(Debug, Deserialize)]
+pub struct WorkItemRelationAttributes {
+    /// Work item relationship type.
+    #[serde(rename = "name")]
+    pub relation_type: String,
 }
