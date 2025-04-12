@@ -15,6 +15,9 @@ pub struct AzureDevOpsClient {
     /// Context.
     context: Context,
 
+    /// Headers used across all requests.
+    headers: HeaderMap,
+
     /// Underlying reqwest HTTP client.
     http_client: Client,
 }
@@ -24,8 +27,23 @@ impl AzureDevOpsClient {
     pub fn new(context: Context) -> Self {
         trace!("Initializing Azure DevOps client.");
 
+        let mut headers = HeaderMap::new();
+        headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
+        headers.insert(
+            AUTHORIZATION,
+            HeaderValue::from_str(&format!(
+                "Basic {}",
+                base64::engine::general_purpose::STANDARD.encode(format!(
+                    "{}:{}",
+                    context.user_email, context.personal_access_token
+                ))
+            ))
+            .expect("failed to parse authorization header"),
+        );
+
         let azure_dev_ops_client = Self {
             context,
+            headers,
             http_client: Client::new(),
         };
 
@@ -41,7 +59,7 @@ impl AzureDevOpsClient {
         let response = self
             .http_client
             .get(request_url)
-            .headers(self.headers())
+            .headers(self.headers.clone())
             .send()
             .await?;
 
@@ -77,28 +95,5 @@ impl AzureDevOpsClient {
             .expect("failed to deserialize work item response");
 
         Ok(response)
-    }
-
-    /// Build request headers used across requests.
-    fn headers(&self) -> HeaderMap {
-        trace!("Building header map common across requests.");
-
-        let mut header_map = HeaderMap::new();
-        header_map.insert(ACCEPT, HeaderValue::from_static("application/json"));
-        header_map.insert(
-            AUTHORIZATION,
-            HeaderValue::from_str(&format!(
-                "Basic {}",
-                base64::engine::general_purpose::STANDARD.encode(format!(
-                    "{}:{}",
-                    self.context.user_email, self.context.personal_access_token
-                ))
-            ))
-            .expect("failed to parse authorization header"),
-        );
-
-        trace!("Header map has been built successfully!");
-
-        header_map
     }
 }
