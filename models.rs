@@ -24,8 +24,13 @@ pub struct CliArguments {
 
     /// Set the level of logging; sometimes referred to as "verbosity." Valid Values: off, error,
     /// warn, info, debug, trace
-    #[arg(short, long, global = true, default_value_t = LevelFilter::Info)]
+    #[arg(short, long, default_value_t = LevelFilter::Info)]
     pub log_level: LevelFilter,
+
+    /// Logs all raw responses as traces if `true`; otherwise, only error responses are logged as
+    /// errors.
+    #[arg(short = 'r', long)]
+    pub log_responses: bool,
 }
 
 /// Represents an Azure DevOps context file.

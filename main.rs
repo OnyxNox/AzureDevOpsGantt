@@ -21,16 +21,32 @@ use crate::{
 /// Application entry point.
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn error::Error>> {
-    let cli_arguments = CliArguments::parse();
+    let mut cli_arguments = CliArguments::parse();
+
+    let mut previous_log_level = None;
+    if cli_arguments.log_responses && cli_arguments.log_level != LevelFilter::Trace {
+        previous_log_level = Some(cli_arguments.log_level);
+
+        cli_arguments.log_level = LevelFilter::Trace;
+    }
 
     initialize_logger(&cli_arguments.log_level);
+
+    if let Some(previous_log_level) = previous_log_level {
+        trace!(
+            "Log responses enabled but log level too low; set log level to TRACE. Previous Log Level: {}",
+            previous_log_level
+        );
+    }
 
     debug!("{:?}", cli_arguments);
 
     info!("Welcome to the Azure DevOps Gantt tool!");
 
-    let azure_dev_ops_client =
-        AzureDevOpsClient::new(read_context(&cli_arguments.context_file_path));
+    let azure_dev_ops_client = AzureDevOpsClient::new(
+        read_context(&cli_arguments.context_file_path),
+        cli_arguments.log_responses,
+    );
 
     let feature_work_item = azure_dev_ops_client
         .work_item(cli_arguments.feature_work_item_id)

@@ -23,11 +23,15 @@ pub struct AzureDevOpsClient {
 
     /// Underlying reqwest HTTP client.
     http_client: Client,
+
+    /// Logs all raw responses as traces if `true`; otherwise, only error responses are logged as
+    /// errors.
+    log_responses: bool,
 }
 
 impl AzureDevOpsClient {
     /// Initialize a new AzureDevOpsClient instance.
-    pub fn new(context: Context) -> Self {
+    pub fn new(context: Context, log_responses: bool) -> Self {
         trace!("Initializing Azure DevOps client.");
 
         let mut headers = HeaderMap::new();
@@ -48,6 +52,7 @@ impl AzureDevOpsClient {
             context,
             headers,
             http_client: Client::new(),
+            log_responses,
         };
 
         debug!("Azure DevOps client initialized successfully!");
@@ -104,7 +109,7 @@ impl AzureDevOpsClient {
             work_item_ids,
         ))
         .await?
-        .json()
+        .json(self.log_responses)
         .await
     }
 }
