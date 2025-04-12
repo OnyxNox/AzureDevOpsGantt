@@ -34,23 +34,8 @@ impl AzureDevOpsClient {
         azure_dev_ops_client
     }
 
-    /// Get work item by identifier.
-    pub async fn work_item(&self, work_item_id: u32) -> Result<WorkItem, reqwest::Error> {
-        self.get(&format!(
-            "{}/{}/{}/_apis/wit/workitems/{}?{}",
-            AZURE_DEV_OPS_DOMAIN,
-            self.context.organization_name,
-            self.context.project_name,
-            work_item_id,
-            AZURE_DEV_OPS_API_VERSION
-        ))
-        .await?
-        .json::<WorkItem>()
-        .await
-    }
-
     /// Send HTTP GET request to the given request URL.
-    async fn get(&self, request_url: &String) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn get(&self, request_url: &String) -> Result<reqwest::Response, reqwest::Error> {
         trace!("Sending GET {}", request_url);
 
         let response = self
@@ -62,16 +47,45 @@ impl AzureDevOpsClient {
 
         debug!("GET {} - {}", request_url, response.status());
 
+        Ok(response.error_for_status()?)
+    }
+
+    /// Get work item by identifier.
+    pub async fn work_item(&self, work_item_id: u32) -> Result<WorkItem, reqwest::Error> {
+        let response = self
+            .get(&format!(
+                "{}/{}/{}/_apis/wit/workitems/{}?{}&$expand=relations",
+                AZURE_DEV_OPS_DOMAIN,
+                self.context.organization_name,
+                self.context.project_name,
+                work_item_id,
+                AZURE_DEV_OPS_API_VERSION
+            ))
+            .await?
+            .text()
+            .await?;
+
+        let response = serde_json::from_str(&response)
+            .map_err(|error| {
+                debug!(
+                    "Failed to deserialize work item response. Response: {}",
+                    response
+                );
+
+                error
+            })
+            .expect("failed to deserialize work item response");
+
         Ok(response)
     }
 
-    /// Build headers used across requests.
+    /// Build request headers used across requests.
     fn headers(&self) -> HeaderMap {
         trace!("Building header map common across requests.");
 
-        let mut headers = HeaderMap::new();
-        headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
-        headers.insert(
+        let mut header_map = HeaderMap::new();
+        header_map.insert(ACCEPT, HeaderValue::from_static("application/json"));
+        header_map.insert(
             AUTHORIZATION,
             HeaderValue::from_str(&format!(
                 "Basic {}",
@@ -83,8 +97,8 @@ impl AzureDevOpsClient {
             .expect("failed to parse authorization header"),
         );
 
-        trace!("Header map built successfully!");
+        trace!("Header map has been built successfully!");
 
-        headers
+        header_map
     }
 }

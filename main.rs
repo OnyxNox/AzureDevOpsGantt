@@ -28,10 +28,20 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
     let azure_dev_ops_client = AzureDevOpsClient::new(read_context());
 
     let work_item = azure_dev_ops_client
-        .work_item(cli_arguments.root_work_item_id)
+        .work_item(cli_arguments.feature_work_item_id)
         .await?;
 
-    info!("Work Item ID: {}", work_item.id);
+    info!(
+        "Generating Gantt diagram for the '{}' {}.",
+        work_item.fields.title, work_item.fields.work_item_type
+    );
+
+    for work_item_relation in work_item.relations {
+        debug!("Related Work Item URL: {}", work_item_relation.url);
+    }
+
+    info!("Gantt diagram has been generated successfully!");
+    info!("Jobs done.");
 
     Ok(())
 }
