@@ -5,7 +5,10 @@ use reqwest::{
     header::{ACCEPT, AUTHORIZATION, HeaderMap, HeaderValue},
 };
 
-use crate::models::{Context, WorkItem};
+use crate::{
+    extensions::ResponseExtensions,
+    models::{Context, WorkItem},
+};
 
 const AZURE_DEV_OPS_API_VERSION: &str = "api-version=7.1";
 const AZURE_DEV_OPS_DOMAIN: &str = "https://dev.azure.com";
@@ -53,7 +56,7 @@ impl AzureDevOpsClient {
     }
 
     /// Send HTTP GET request to the given request URL.
-    pub async fn get(&self, request_url: &String) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn get(&self, request_url: &String) -> reqwest::Result<reqwest::Response> {
         trace!("Sending GET {}", request_url);
 
         let response = self
@@ -69,31 +72,17 @@ impl AzureDevOpsClient {
     }
 
     /// Get work item by identifier.
-    pub async fn work_item(&self, work_item_id: u32) -> Result<WorkItem, reqwest::Error> {
-        let response = self
-            .get(&format!(
-                "{}/{}/{}/_apis/wit/workitems/{}?{}&$expand=relations",
-                AZURE_DEV_OPS_DOMAIN,
-                self.context.organization_name,
-                self.context.project_name,
-                work_item_id,
-                AZURE_DEV_OPS_API_VERSION
-            ))
-            .await?
-            .text()
-            .await?;
-
-        let response = serde_json::from_str(&response)
-            .map_err(|error| {
-                debug!(
-                    "Failed to deserialize work item response. Response: {}",
-                    response
-                );
-
-                error
-            })
-            .expect("failed to deserialize work item response");
-
-        Ok(response)
+    pub async fn work_item(&self, work_item_id: u32) -> reqwest::Result<WorkItem> {
+        self.get(&format!(
+            "{}/{}/{}/_apis/wit/workitems/{}?{}&$expand=relations",
+            AZURE_DEV_OPS_DOMAIN,
+            self.context.organization_name,
+            self.context.project_name,
+            work_item_id,
+            AZURE_DEV_OPS_API_VERSION
+        ))
+        .await?
+        .json()
+        .await
     }
 }

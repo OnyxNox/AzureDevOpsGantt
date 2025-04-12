@@ -1,4 +1,5 @@
 mod azure_dev_ops_client;
+mod extensions;
 mod models;
 
 use std::{
