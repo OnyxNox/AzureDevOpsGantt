@@ -12,11 +12,15 @@ The **Azure DevOps Gantt (A-DOG)** tool is used to generate a [Mermaid JS](https
 
 ### JavaScript Version
 
-Open the [web/index.html](./web/index.html) file in a web browser. This version can be used to rapidly iterate while setting up a feature.
+The JavaScript version is ideal for rapidly iterating while setting up a feature.
+
+Navigate to this repository's [GitHub Page](https://onyxnox.github.io/AzureDevOpsGantt/) (recommended), or download the repository and open the [./docs/index.html](./docs/index.html) file in a web browser.
 
 ### Rust Version
 
-Run the `cargo run` command below in a terminal at the root of the workspace. This version can be used to track progress while working on the feature by scheduling regular snapshots.
+The Rust version is ideal for tracking progress by scheduling regular snapshots while working on the feature.
+
+Run the `cargo run` command below in a terminal at the root of the workspace.
 
 ```shell
 cargo run -- --help
