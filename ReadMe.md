@@ -2,13 +2,27 @@
 
 The **Azure DevOps Gantt (A-DOG)** tool is used to generate a [Mermaid JS](https://mermaid.js.org/) [Gantt Diagram](https://mermaid.js.org/syntax/gantt.html) from a work item(s) and their children.
 
+## To Dos
+
+- [ ] Generating Gantt diagram based on feature start time, effort estimates and number of resources.
+- [ ] Update authentication to something more modern and move away from person access tokens.
+- [ ] Both versions feature complete.
+
 ## Usage
+
+### JavaScript Version
+
+Open the [web/index.html](./web/index.html) file in a web browser. This version can be used to rapidly iterate while setting up a feature.
+
+### Rust Version
+
+Run the `cargo run` command below in a terminal at the root of the workspace. This version can be used to track progress while working on the feature by scheduling regular snapshots.
 
 ```shell
 cargo run -- --help
 ```
 
-## Crates
+## Crates Used
 
 - [Base64](https://github.com/marshallpierce/rust-base64) is a framework for encoding and decoding Base64 strings.
 - [Chrono](https://github.com/chronotope/chrono) provides timezone-aware date and time operations.
