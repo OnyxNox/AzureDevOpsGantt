@@ -6,7 +6,6 @@ The **Azure DevOps Gantt (A-DOG)** tool is used to generate a [Mermaid JS](https
 
 - [ ] Generate Gantt diagram based on feature start time, effort estimates and number of resources.
 - [ ] Update authentication to something more modern and move away from person access tokens.
-- [ ] Host JavaScript version on GitHub.io pages.
 - [ ] Both versions feature complete.
 
 ## Usage
