@@ -25,14 +25,17 @@ body {
     background-color: var(--page-background-color);
     color: var(--page-color);
     display: flex;
+    flex: 1;
     font-family: Arial, sans-serif;
     height: 100%;
     justify-content: center;
     margin: 0;
     padding: 0;
+    width: 100%;
 }
 
-#mermaidOutput {
+#dependencyGraph,
+#ganttDiagram {
     display: flex;
     flex: 1;
     font-size: 1.3rem;

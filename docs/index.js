@@ -1,11 +1,19 @@
 window.onload = handleWindowOnLoad;
 
-mermaid.initialize({ startOnLoad: false });
+mermaid.initialize({ startOnLoad: false, theme: "dark", gantt: { useWidth: 1200 } });
 
 /**
  * Get work item identifier from given URL.
  */
-const getWorkItemIdFromUrl = (url) => url.substring(url.lastIndexOf('/') + 1);
+const getWorkItemIdFromUrl = (url) => parseInt(url.substring(url.lastIndexOf('/') + 1), 10);
+
+const getDateString = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+};
 
 /**
  * Handle the form's onSubmit event.
@@ -71,10 +79,42 @@ async function handleFormOnSubmit(event) {
             .map(parentWorkItemId => `    ${parentWorkItemId} --> ${node.data.id}`))
         .join('\n');
 
-    localStorage.setItem(LOCAL_STORAGE_DIAGRAM_KEY, diagram);
+    const featureStartDate =
+        new Date(featureWorkItem.fields["Microsoft.VSTS.Scheduling.StartDate"]);
 
-    document.getElementById(MERMAID_OUTPUT_ID).innerHTML =
-        (await mermaid.render("updatedGraph", diagram)).svg;
+    let ganttDiagram = `gantt\n    title ${featureWorkItem.fields["System.Title"]}\n`
+
+    ganttDiagram += "    dateFormat YYYY-MM-DD\n    excludes weekends\n";
+    ganttDiagram += "    Section Milestones\n";
+    ganttDiagram +=
+        `    Feature Start : milestone, featureStart, ${getDateString(featureStartDate)}, 1d\n`;
+    ganttDiagram += "    Section Default\n";
+
+    let mappedNodeIds = [];
+
+    while (mappedNodeIds.length < childWorkItems.length) {
+        let nextNodes = dependency_graph
+            .nodes
+            .filter(node => !mappedNodeIds.includes(node.data.id)
+                && node.parentWorkItemIds.every(parentWorkItemId => parentWorkItemId == node.data.id || mappedNodeIds.includes(parentWorkItemId)));
+
+        nextNodes.forEach(nextNode => {
+            const workItemTitle = nextNode.data.fields["System.Title"].replace(':', '_');
+
+            ganttDiagram += `    ${workItemTitle} : ${nextNode.data.fields["Microsoft.VSTS.Scheduling.RemainingWork"]}d\n`;
+
+            mappedNodeIds.push(nextNode.data.id);
+        });
+    }
+
+    localStorage.setItem(LOCAL_STORAGE_DEPENDENCY_DIAGRAM_KEY, diagram);
+    localStorage.setItem(LOCAL_STORAGE_GANTT_DIAGRAM_KEY, ganttDiagram);
+
+    // document.getElementById(DEPENDENCY_DIAGRAM_OUTPUT_ID).innerHTML =
+    //     (await mermaid.render("updatedGraph", diagram)).svg;
+
+    document.getElementById(GANTT_DIAGRAM_OUTPUT_ID).innerHTML =
+        (await mermaid.render("updatedGraph", ganttDiagram)).svg;
 
     document.getElementById(CONTEXT_TOGGLE_ID).checked = false;
 }
@@ -97,13 +137,20 @@ async function handleWindowOnLoad() {
         document.getElementById(CONTEXT_TOGGLE_ID).checked = true;
     }
 
-    const previousDiagram = localStorage.getItem(LOCAL_STORAGE_DIAGRAM_KEY);
+    const previousDependencyGraph = localStorage.getItem(LOCAL_STORAGE_DEPENDENCY_DIAGRAM_KEY);
 
-    if (previousDiagram) {
-        document.getElementById(MERMAID_OUTPUT_ID).innerHTML =
-            (await mermaid.render("updatedGraph", previousDiagram)).svg;
+    // if (previousDependencyGraph) {
+    //     document.getElementById(DEPENDENCY_DIAGRAM_OUTPUT_ID).innerHTML =
+    //         (await mermaid.render("updatedGraph", previousDependencyGraph)).svg;
+    // }
+
+    const previousGanttDiagram = localStorage.getItem(LOCAL_STORAGE_GANTT_DIAGRAM_KEY);
+
+    if (previousGanttDiagram) {
+        document.getElementById(GANTT_DIAGRAM_OUTPUT_ID).innerHTML =
+            (await mermaid.render("updatedGraph", previousGanttDiagram)).svg;
     } else {
-        document.getElementById(MERMAID_OUTPUT_ID).innerHTML = "No previous context has been found;"
+        document.getElementById(GANTT_DIAGRAM_OUTPUT_ID).innerHTML = "No previous context has been found;"
             + " please fill out context panel and click the <b>Generate</b> button.";
 
         document.getElementById(ORGANIZATION_NAME_ID).focus();
