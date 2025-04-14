@@ -1,6 +1,13 @@
 window.onload = handleWindowOnLoad;
 
-mermaid.initialize({ startOnLoad: false, theme: "dark", gantt: { useWidth: 1200 } });
+const mermaidConfiguration = {
+    startOnLoad: false,
+    theme: "dark",
+    flowchart: { useMaxWidth: true },
+    gantt: { useWidth: 1200 },
+};
+
+mermaid.initialize(mermaidConfiguration);
 
 /**
  * Get work item identifier from a direct work item URL.
