@@ -34,8 +34,8 @@ body {
     width: 100%;
 }
 
-#dependencyGraph,
-#ganttDiagram {
+#dependencyDiagramOutput,
+#ganttDiagramOutput {
     display: flex;
     flex: 1;
     font-size: 1.3rem;

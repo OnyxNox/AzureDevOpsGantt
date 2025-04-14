@@ -1,13 +1,71 @@
-const AZURE_DEV_OPS_DOMAIN = "https://dev.azure.com";
-const COMMON_QUERY_PARAMETERS = "api-version=7.1&$expand=relations";
-const CONTEXT_TOGGLE_ID = "contextToggle";
-const DEPENDENCY_DIAGRAM_OUTPUT_ID = "dependencyGraph";
-const DEPENDENCY_RELATION_TYPE_ID = "dependencyRelationType";
-const FEATURE_WORK_ITEM_ID_ID = "featureWorkItemId";
-const LOCAL_STORAGE_CONTEXT_KEY = "context";
-const LOCAL_STORAGE_DEPENDENCY_DIAGRAM_KEY = "dependency";
-const LOCAL_STORAGE_GANTT_DIAGRAM_KEY = "gantt";
-const GANTT_DIAGRAM_OUTPUT_ID = "ganttDiagram";
-const ORGANIZATION_NAME_ID = "organizationName";
-const PROJECT_NAME_ID = "projectName";
-const USER_EMAIL_ID = "userEmail";
+/**
+ * Collection of constant values used throughout the application.
+ */
+const Constants = (function () {
+    return {
+        /**
+         * Collection of local storage keys.
+         */
+        localStorage: {
+            /**
+             * Local storage context key; value contains previous session's context.
+             */
+            CONTEXT_KEY: "context",
+
+            /**
+             * Local storage dependency diagram key; value contains previous session's dependency
+             * diagram.
+             */
+            DEPENDENCY_DIAGRAM_KEY: "dependencyDiagram",
+
+            /**
+             * Local storage gantt diagram key; value contains previous session's gantt diagram.
+             */
+            GANTT_DIAGRAM_KEY: "ganttDiagram",
+        },
+        /**
+         * Collection of user interface element identifiers.
+         */
+        userInterface: {
+            /**
+             * Context toggle checkbox HTML element identifier.
+             */
+            CONTEXT_TOGGLE_ELEMENT_ID: "contextToggle",
+
+            /**
+             * Dependency diagram output HTML element identifier.
+             */
+            DEPENDENCY_DIAGRAM_OUTPUT_ELEMENT_ID: "dependencyDiagramOutput",
+
+            /**
+             * Dependency relation input HTML element identifier.
+             */
+            DEPENDENCY_RELATION_ELEMENT_ID: "dependencyRelation",
+
+            /**
+             * Feature work item identifier input HTML element identifier.
+             */
+            FEATURE_WORK_ITEM_ID_ELEMENT_ID: "featureWorkItemId",
+
+            /**
+             * Gantt diagram output HTML element identifier.
+             */
+            GANTT_DIAGRAM_OUTPUT_ELEMENT_ID: "ganttDiagramOutput",
+
+            /**
+             * Organization name input HTML element identifier.
+             */
+            ORGANIZATION_NAME_ELEMENT_ID: "organizationName",
+
+            /**
+             * Project name input HTML element identifier.
+             */
+            PROJECT_NAME_ELEMENT_ID: "projectName",
+
+            /**
+             * User email input HTML element identifier.
+             */
+            USER_EMAIL_ELEMENT_ID: "userEmail",
+        },
+    };
+})();

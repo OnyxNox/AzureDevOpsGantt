@@ -3,9 +3,12 @@ window.onload = handleWindowOnLoad;
 mermaid.initialize({ startOnLoad: false, theme: "dark", gantt: { useWidth: 1200 } });
 
 /**
- * Get work item identifier from given URL.
+ * Get work item identifier from a direct work item URL.
+ * @param {string} workItemUrl Direct work item URL.
+ * @returns {number} Work item identifier.
  */
-const getWorkItemIdFromUrl = (url) => parseInt(url.substring(url.lastIndexOf('/') + 1), 10);
+const getWorkItemIdFromUrl = (workItemUrl) =>
+    parseInt(workItemUrl.substring(workItemUrl.lastIndexOf('/') + 1), 10);
 
 const getDateString = (date) => {
     const year = date.getFullYear();
@@ -23,136 +26,143 @@ async function handleFormOnSubmit(event) {
 
     const formData = new FormData(event.target);
     const context = {
-        dependencyRelationType: formData.get(DEPENDENCY_RELATION_TYPE_ID),
-        featureWorkItemId: formData.get(FEATURE_WORK_ITEM_ID_ID),
-        organizationName: formData.get(ORGANIZATION_NAME_ID),
-        projectName: formData.get(PROJECT_NAME_ID),
-        userEmail: formData.get(USER_EMAIL_ID),
+        dependencyRelation: formData.get(Constants.userInterface.DEPENDENCY_RELATION_ELEMENT_ID)
+            ?? "",
+        featureWorkItemId: formData.get(Constants.userInterface.FEATURE_WORK_ITEM_ID_ELEMENT_ID)
+            ?? 0,
+        organizationName: formData.get(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID) ?? "",
+        projectName: formData.get(Constants.userInterface.PROJECT_NAME_ELEMENT_ID) ?? "",
+        userEmail: formData.get(Constants.userInterface.USER_EMAIL_ELEMENT_ID) ?? "",
     };
 
-    localStorage.setItem(LOCAL_STORAGE_CONTEXT_KEY, JSON.stringify(context));
+    localStorage.setItem(Constants.localStorage.CONTEXT_KEY, JSON.stringify(context));
 
-    const workItemsUrl = `${AZURE_DEV_OPS_DOMAIN}/${context.organizationName}`
-        + `/${context.projectName}/_apis/wit/workitems`;
-    const personalAccessToken = formData.get("personalAccessToken");
-    const fetchOptions = {
-        headers: {
-            "Accept": "application/json",
-            "Authorization": `Basic ${btoa(`${context.userEmail}:${personalAccessToken}`)}`,
-        }
-    }
+    const azureDevOpsClient = new AzureDevOpsClient(
+        context.userEmail,
+        formData.get("personalAccessToken"),
+        context.organizationName,
+        context.projectName,
+    );
 
-    const featureFetchUrl = `${workItemsUrl}/${context.featureWorkItemId}`
-        + `?${COMMON_QUERY_PARAMETERS}`;
-    const featureWorkItem = await (await fetch(featureFetchUrl, fetchOptions)).json();
+    const featureWorkItem = await azureDevOpsClient.getWorkItem(context.featureWorkItemId);
 
     const childWorkItemIds = featureWorkItem
         .relations
         .filter(workItemRelation => workItemRelation.attributes.name == "Child")
-        .map(childWorkItem => getWorkItemIdFromUrl(childWorkItem.url))
-        .join(',');
+        .map(childWorkItem => getWorkItemIdFromUrl(childWorkItem.url));
 
-    const childrenFetchUrl = `${workItemsUrl}/?ids=${childWorkItemIds}&${COMMON_QUERY_PARAMETERS}`;
-    const childWorkItems = (await (await fetch(childrenFetchUrl, fetchOptions)).json()).value;
+    const childWorkItems = (await azureDevOpsClient.getWorkItems(childWorkItemIds)).value;
 
-    const dependency_graph = {
-        nodes: [],
-    };
+    const dependencyGraph = new DependencyGraph();
 
-    let diagram = "flowchart TD\n";
+    childWorkItems.forEach((childWorkItem, childWorkItemIndex) => {
+        dependencyGraph.addNode(childWorkItem);
 
-    childWorkItems.forEach(childWorkItem => {
-        const parentWorkItemIds = childWorkItem
+        childWorkItem
             .relations
             .filter(childWorkItemRelation =>
-                childWorkItemRelation.attributes.name == context.dependencyRelationType)
-            .map(childWorkItemRelation => getWorkItemIdFromUrl(childWorkItemRelation.url));
-
-        dependency_graph.nodes.push({ data: childWorkItem, parentWorkItemIds });
-
-        diagram += `    ${childWorkItem.id}[${childWorkItem.fields["System.Title"]}]\n`;
+                childWorkItemRelation.attributes.name == context.dependencyRelation)
+            .map(dependencyWorkItemRelation => getWorkItemIdFromUrl(dependencyWorkItemRelation.url))
+            .map(dependencyWorkItemId =>
+                childWorkItems.findIndex(childWorkItem => childWorkItem.id == dependencyWorkItemId))
+            .forEach(dependencyWorkItemIndex =>
+                dependencyGraph.addEdge(childWorkItemIndex, dependencyWorkItemIndex));
     });
 
-    diagram += dependency_graph
-        .nodes
-        .flatMap(node => node.parentWorkItemIds
-            .map(parentWorkItemId => `    ${parentWorkItemId} --> ${node.data.id}`))
+    let dependencyGraphNodes = dependencyGraph.getNodes();
+
+    let dependencyDiagram = "flowchart TD\n";
+    dependencyDiagram += dependencyGraphNodes
+        .map(node => `    ${node.data.id}[${node.data.fields["System.Title"]}]`)
         .join('\n');
+    dependencyDiagram += '\n' + dependencyGraphNodes
+        .flatMap(node => node.parentNodeIndices.map(parentNodeIndex =>
+            `    ${dependencyGraphNodes[parentNodeIndex].data.id} --> ${node.data.id}`
+        ))
+        .join('\n');
+
+    localStorage.setItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY, dependencyDiagram);
+
+    document.getElementById(Constants.userInterface.DEPENDENCY_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML
+        = (await mermaid.render("updatedGraph", dependencyDiagram)).svg;
 
     const featureStartDate =
         new Date(featureWorkItem.fields["Microsoft.VSTS.Scheduling.StartDate"]);
 
-    let ganttDiagram = `gantt\n    title ${featureWorkItem.fields["System.Title"]}\n`
-
-    ganttDiagram += "    dateFormat YYYY-MM-DD\n    excludes weekends\n";
+    let ganttDiagram = "gantt\n    dateFormat YYYY-MM-DD\n    excludes weekends\n"
     ganttDiagram += "    Section Milestones\n";
     ganttDiagram +=
         `    Feature Start : milestone, featureStart, ${getDateString(featureStartDate)}, 1d\n`;
     ganttDiagram += "    Section Default\n";
 
-    let mappedNodeIds = [];
+    let scheduledWorkItemIds = [];
 
-    while (mappedNodeIds.length < childWorkItems.length) {
-        let nextNodes = dependency_graph
-            .nodes
-            .filter(node => !mappedNodeIds.includes(node.data.id)
-                && node.parentWorkItemIds.every(parentWorkItemId => parentWorkItemId == node.data.id || mappedNodeIds.includes(parentWorkItemId)));
+    while (scheduledWorkItemIds.length < childWorkItems.length) {
+        let workItemsToBeScheduled = dependencyGraphNodes
+            .filter(node => !scheduledWorkItemIds.includes(node.data.id))
+            .filter(node => node.parentNodeIndices.every(parentNodeIndex =>
+                scheduledWorkItemIds.includes(childWorkItems[parentNodeIndex].id)
+            ))
+            .map(node => node.data);
 
-        nextNodes.forEach(nextNode => {
-            const workItemTitle = nextNode.data.fields["System.Title"].replace(':', '_');
+        workItemsToBeScheduled.forEach(workItemToBeScheduled => {
+            const workItemTitle = workItemToBeScheduled.fields["System.Title"].replace(':', '_');
 
-            ganttDiagram += `    ${workItemTitle} : ${nextNode.data.fields["Microsoft.VSTS.Scheduling.RemainingWork"]}d\n`;
+            ganttDiagram += `    ${workItemTitle} : ${workItemToBeScheduled.fields["Microsoft.VSTS.Scheduling.RemainingWork"]}d\n`;
 
-            mappedNodeIds.push(nextNode.data.id);
+            scheduledWorkItemIds.push(workItemToBeScheduled.id);
         });
     }
 
-    localStorage.setItem(LOCAL_STORAGE_DEPENDENCY_DIAGRAM_KEY, diagram);
-    localStorage.setItem(LOCAL_STORAGE_GANTT_DIAGRAM_KEY, ganttDiagram);
+    localStorage.setItem(Constants.localStorage.GANTT_DIAGRAM_KEY, ganttDiagram);
 
-    // document.getElementById(DEPENDENCY_DIAGRAM_OUTPUT_ID).innerHTML =
-    //     (await mermaid.render("updatedGraph", diagram)).svg;
-
-    document.getElementById(GANTT_DIAGRAM_OUTPUT_ID).innerHTML =
+    document.getElementById(Constants.userInterface.GANTT_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML =
         (await mermaid.render("updatedGraph", ganttDiagram)).svg;
 
-    document.getElementById(CONTEXT_TOGGLE_ID).checked = false;
+    document.getElementById(Constants.userInterface.CONTEXT_TOGGLE_ELEMENT_ID).checked = false;
 }
 
 /**
  * Handle the windows's onLoad event.
  */
 async function handleWindowOnLoad() {
-    const previousContext = localStorage.getItem(LOCAL_STORAGE_CONTEXT_KEY);
+    const previousContext = localStorage.getItem(Constants.localStorage.CONTEXT_KEY);
 
     if (previousContext) {
         const formData = JSON.parse(previousContext);
-        document.getElementById(DEPENDENCY_RELATION_TYPE_ID).value = formData.dependencyRelationType
-            || "";
-        document.getElementById(FEATURE_WORK_ITEM_ID_ID).value = formData.featureWorkItemId || "";
-        document.getElementById(ORGANIZATION_NAME_ID).value = formData.organizationName || "";
-        document.getElementById(PROJECT_NAME_ID).value = formData.projectName || "";
-        document.getElementById(USER_EMAIL_ID).value = formData.userEmail || "";
+
+        document.getElementById(Constants.userInterface.DEPENDENCY_RELATION_ELEMENT_ID).value =
+            formData.dependencyRelation ?? "";
+        document.getElementById(Constants.userInterface.FEATURE_WORK_ITEM_ID_ELEMENT_ID).value =
+            formData.featureWorkItemId ?? "";
+        document.getElementById(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID).value =
+            formData.organizationName ?? "";
+        document.getElementById(Constants.userInterface.PROJECT_NAME_ELEMENT_ID).value =
+            formData.projectName ?? "";
+        document.getElementById(Constants.userInterface.USER_EMAIL_ELEMENT_ID).value =
+            formData.userEmail ?? "";
     } else {
-        document.getElementById(CONTEXT_TOGGLE_ID).checked = true;
+        document.getElementById(Constants.userInterface.CONTEXT_TOGGLE_ELEMENT_ID).checked = true;
     }
 
-    const previousDependencyGraph = localStorage.getItem(LOCAL_STORAGE_DEPENDENCY_DIAGRAM_KEY);
+    const previousDependencyGraph =
+        localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
 
     // if (previousDependencyGraph) {
     //     document.getElementById(DEPENDENCY_DIAGRAM_OUTPUT_ID).innerHTML =
     //         (await mermaid.render("updatedGraph", previousDependencyGraph)).svg;
     // }
 
-    const previousGanttDiagram = localStorage.getItem(LOCAL_STORAGE_GANTT_DIAGRAM_KEY);
+    const previousGanttDiagram = localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY);
 
     if (previousGanttDiagram) {
-        document.getElementById(GANTT_DIAGRAM_OUTPUT_ID).innerHTML =
+        document.getElementById(Constants.userInterface.GANTT_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML =
             (await mermaid.render("updatedGraph", previousGanttDiagram)).svg;
     } else {
-        document.getElementById(GANTT_DIAGRAM_OUTPUT_ID).innerHTML = "No previous context has been found;"
-            + " please fill out context panel and click the <b>Generate</b> button.";
+        document.getElementById(Constants.userInterface.GANTT_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML =
+            "No previous context has been found; please fill out context panel and click the "
+            + "<b>Generate</b> button.";
 
-        document.getElementById(ORGANIZATION_NAME_ID).focus();
+        document.getElementById(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID).focus();
     }
 }

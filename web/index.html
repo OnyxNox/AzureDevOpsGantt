@@ -29,8 +29,8 @@
                     <input type="text" id="featureWorkItemId" name="featureWorkItemId" required />
                 </div>
                 <div class="formControl">
-                    <label for="dependencyRelationType">Dependency Relation</label>
-                    <input type="text" id="dependencyRelationType" name="dependencyRelationType" required />
+                    <label for="dependencyRelation">Dependency Relation</label>
+                    <input type="text" id="dependencyRelation" name="dependencyRelation" required />
                 </div>
                 <div class="formControl">
                     <label for="userEmail">User Email</label>
@@ -45,14 +45,16 @@
         </div>
     </div>
 
-    <!-- <div id="dependencyGraph"></div> -->
+    <div id="dependencyDiagramOutput"></div>
 
-    <div id="ganttDiagram"></div>
+    <div id="ganttDiagramOutput"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.5.0/mermaid.min.js"
         integrity="sha512-3EZqKCkk3nMLmbrI7mfry81KH7dkzy/BoDfQrodwLQnS/RbsVlERdYP6J0oiJegRUxSOmx7Y35WNbVKSw7mipw=="
         crossorigin="anonymous"></script>
+    <script src="./azure_dev_ops_client.js"></script>
     <script src="./constants.js"></script>
+    <script src="./dependency_graph.js"></script>
     <script src="./index.js"></script>
 </body>
 
