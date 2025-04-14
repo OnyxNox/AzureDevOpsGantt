@@ -83,9 +83,6 @@ async function handleFormOnSubmit(event) {
 
     localStorage.setItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY, dependencyDiagram);
 
-    document.getElementById(Constants.userInterface.DEPENDENCY_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML
-        = (await mermaid.render("updatedGraph", dependencyDiagram)).svg;
-
     const featureStartDate =
         new Date(featureWorkItem.fields["Microsoft.VSTS.Scheduling.StartDate"]);
 
@@ -116,8 +113,8 @@ async function handleFormOnSubmit(event) {
 
     localStorage.setItem(Constants.localStorage.GANTT_DIAGRAM_KEY, ganttDiagram);
 
-    document.getElementById(Constants.userInterface.GANTT_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML =
-        (await mermaid.render("updatedGraph", ganttDiagram)).svg;
+    document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML
+        = (await mermaid.render("updatedGraph", dependencyDiagram)).svg;
 
     document.getElementById(Constants.userInterface.CONTEXT_TOGGLE_ELEMENT_ID).checked = false;
 }
@@ -148,21 +145,21 @@ async function handleWindowOnLoad() {
     const previousDependencyGraph =
         localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
 
-    // if (previousDependencyGraph) {
-    //     document.getElementById(DEPENDENCY_DIAGRAM_OUTPUT_ID).innerHTML =
-    //         (await mermaid.render("updatedGraph", previousDependencyGraph)).svg;
-    // }
-
-    const previousGanttDiagram = localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY);
-
-    if (previousGanttDiagram) {
-        document.getElementById(Constants.userInterface.GANTT_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML =
-            (await mermaid.render("updatedGraph", previousGanttDiagram)).svg;
-    } else {
-        document.getElementById(Constants.userInterface.GANTT_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML =
-            "No previous context has been found; please fill out context panel and click the "
-            + "<b>Generate</b> button.";
-
-        document.getElementById(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID).focus();
+    if (previousDependencyGraph) {
+        document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML
+            = (await mermaid.render("updatedGraph", previousDependencyGraph)).svg;
     }
+
+    // const previousGanttDiagram = localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY);
+
+    // if (previousGanttDiagram) {
+    //     document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML
+    //         = (await mermaid.render("updatedGraph", previousGanttDiagram)).svg;
+    // } else {
+    //     document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML
+    //         = "No previous context has been found; please fill out context panel and click the "
+    //         + "<b>Generate</b> button.";
+
+    //     document.getElementById(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID).focus();
+    // }
 }

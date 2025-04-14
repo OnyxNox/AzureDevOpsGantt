@@ -33,11 +33,6 @@ const Constants = (function () {
             CONTEXT_TOGGLE_ELEMENT_ID: "contextToggle",
 
             /**
-             * Dependency diagram output HTML element identifier.
-             */
-            DEPENDENCY_DIAGRAM_OUTPUT_ELEMENT_ID: "dependencyDiagramOutput",
-
-            /**
              * Dependency relation input HTML element identifier.
              */
             DEPENDENCY_RELATION_ELEMENT_ID: "dependencyRelation",
@@ -48,9 +43,9 @@ const Constants = (function () {
             FEATURE_WORK_ITEM_ID_ELEMENT_ID: "featureWorkItemId",
 
             /**
-             * Gantt diagram output HTML element identifier.
+             * Mermaid diagram output HTML element identifier.
              */
-            GANTT_DIAGRAM_OUTPUT_ELEMENT_ID: "ganttDiagramOutput",
+            MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID: "mermaidDiagramOutput",
 
             /**
              * Organization name input HTML element identifier.
