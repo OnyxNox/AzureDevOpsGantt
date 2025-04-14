@@ -11,6 +11,7 @@ The **Azure DevOps Gantt (A-DOG)** tool is used to generate a [Mermaid JS](https
 - [ ] Add ability to switch between child work item dependency graph and the Gantt diagram.
 - [ ] Add an automatic refresh feature so that the diagrams update as the feature is being set up.
 - [ ] Update authentication to something more modern and move away from person access tokens.
+- [ ] Setup an `xtask` workspace for pseudo-libman for web and any other build tasks that are needed.
 - [ ] Allow user to have multiple contexts.
 - [ ] Both versions feature complete.
 
