@@ -9,10 +9,16 @@ The **Azure DevOps Gantt (A-DOG)** tool is used to generate a [Mermaid JS](https
 - [ ] Add ability to provide number of resources assigned to the feature, and split the child work items in the Gantt diagram based on the count.
 - [ ] Add ability to create resource-specific blockers to better assign child work items and/or give better timeline estimates with the circumstances.
 - [ ] Add an automatic refresh feature so that the diagrams update as the feature is being set up.
+- [ ] Allow sections to be defined in tags, where the section prefix is customizable i.e. Section:Orchestration.
+- [ ] Add ability to override work item assignment rank, by default it will be by length descending.
 - [ ] Update authentication to something more modern and move away from person access tokens.
-- [ ] Setup an `xtask` workspace for pseudo-libman for web and any other build tasks that are needed.
+- [ ] Allow user to customize the effort field referenced, like the Dependency Relation.
+- [ ] Add ability for user to set the effort length. i.e. Day, Week, Month, etc.
+- [ ] Sanitize titles with invalid characters for mermaid diagrams.
+- [ ] Show error notifications when an error occurs with instructions on how to fix them.
+- [ ] Setup an `xtask` workspace for pseudo-libman for web, GitHub page updates and any other build tasks that are needed.
 - [ ] Allow user to have multiple contexts.
-- [ ] Both versions feature complete.
+- [ ] Add ability for the feature to be built out in A-DOG, once done then click "Deploy" to create all of the child work items according to the structure defined.
 
 ## Usage
 

@@ -17,8 +17,8 @@
 
         <div id="controlPanelContent">
             <h1>Control Panel</h1>
-            <h2>Context</h2>
             <form onsubmit="handleFormOnSubmit(event)">
+                <h2>Context</h2>
                 <div class="formControl">
                     <label for="organizationName">Organization Name</label>
                     <input type="text" id="organizationName" name="organizationName" required />
@@ -32,16 +32,17 @@
                     <input type="text" id="featureWorkItemId" name="featureWorkItemId" required />
                 </div>
                 <div class="formControl">
-                    <label for="dependencyRelation">Dependency Relation</label>
-                    <input type="text" id="dependencyRelation" name="dependencyRelation" required />
-                </div>
-                <div class="formControl">
                     <label for="userEmail">User Email</label>
                     <input type="email" id="userEmail" name="userEmail" required />
                 </div>
                 <div class="formControl">
                     <label for="personalAccessToken">Personal Access Token</label>
                     <input type="password" id="personalAccessToken" name="personalAccessToken" required />
+                </div>
+                <h2>Settings</h2>
+                <div class="formControl">
+                    <label for="dependencyRelation">Dependency Relation</label>
+                    <input type="text" id="dependencyRelation" name="dependencyRelation" required />
                 </div>
                 <button type="submit">Generate</button>
             </form>
