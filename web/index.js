@@ -25,10 +25,12 @@ const getDateString = (date) => {
     return `${year}-${month}-${day}`;
 };
 
-async function handleDiagramTypeChange(event) {
-    const diagram = event.target.value == "gantt"
+async function handleDiagramTypeChange(diagramType) {
+    const diagram = diagramType == "gantt"
         ? localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY)
         : localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
+
+    localStorage.setItem(Constants.localStorage.SETTINGS_KEY, diagramType);
 
     document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML =
         (await mermaid.render("updatedGraph", diagram)).svg;
@@ -129,8 +131,12 @@ async function handleFormOnSubmit(event) {
 
     localStorage.setItem(Constants.localStorage.GANTT_DIAGRAM_KEY, ganttDiagram);
 
+    const selectedDiagramType =
+        document.querySelector('input[type="radio"][name="diagramType"]:checked').value == "gantt"
+            ? ganttDiagram : dependencyDiagram;
+
     document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML =
-        (await mermaid.render("updatedGraph", dependencyDiagram)).svg;
+        (await mermaid.render("updatedGraph", selectedDiagramType)).svg;
 
     document.getElementById(Constants.userInterface.CONTROL_PANEL_TOGGLE_ELEMENT_ID).checked =
         false;
@@ -160,16 +166,16 @@ async function handleWindowOnLoad() {
             true;
     }
 
-    const previousGanttDiagram = localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY);
+    const previousSettings = localStorage.getItem(Constants.localStorage.SETTINGS_KEY);
+    const diagram = previousSettings == DiagramType.Gantt
+        ? localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY)
+        : localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
 
-    if (previousGanttDiagram) {
+    if (diagram) {
         document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML
-            = (await mermaid.render("updatedGraph", previousGanttDiagram)).svg;
-    } else {
-        document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML
-            = "No previous context has been found; please fill out context panel and click the "
-            + "<b>Generate</b> button.";
-
-        document.getElementById(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID).focus();
+            = (await mermaid.render("updatedGraph", diagram)).svg;
     }
+
+    document.querySelector(`input[type="radio"][name="diagramType"][value=${previousSettings}]`)
+        .checked = true;
 }

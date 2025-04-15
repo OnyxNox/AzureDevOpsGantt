@@ -22,6 +22,11 @@ const Constants = (function () {
              * Local storage gantt diagram key; value contains previous session's gantt diagram.
              */
             GANTT_DIAGRAM_KEY: "ganttDiagram",
+
+            /**
+             * Local storage settings key; value contains previous session's settings.
+             */
+            SETTINGS_KEY: "settings",
         },
         /**
          * Collection of user interface element identifiers.

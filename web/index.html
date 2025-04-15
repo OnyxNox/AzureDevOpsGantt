@@ -51,12 +51,13 @@
     <div id="actionBar">
         <div class="buttonRadioGroup">
             <label>
-                <input type="radio" name="diagramType" value="gantt" onchange="handleDiagramTypeChange(event)"
-                    checked />
+                <input type="radio" name="diagramType" value="gantt"
+                    onchange="handleDiagramTypeChange(event.target.value)" />
                 Gantt
             </label>
             <label>
-                <input type="radio" name="diagramType" value="dependency" onchange="handleDiagramTypeChange(event)" />
+                <input type="radio" name="diagramType" value="dependency"
+                    onchange="handleDiagramTypeChange(event.target.value)" />
                 Dependency
             </label>
         </div>
@@ -70,6 +71,7 @@
     <script src="./azure_dev_ops_client.js"></script>
     <script src="./constants.js"></script>
     <script src="./dependency_graph.js"></script>
+    <script src="./models.js"></script>
     <script src="./index.js"></script>
 </body>
 
