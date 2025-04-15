@@ -6,6 +6,7 @@ const DiagramType = Object.freeze({
 const Settings = (function () {
     return {
         dependencyRelation: "Tests",
+        resourceCount: 1,
         selectedDiagramType: DiagramType.Gantt,
     };
 })();

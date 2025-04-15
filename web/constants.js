@@ -63,6 +63,11 @@ const Constants = (function () {
             PROJECT_NAME_ELEMENT_ID: "projectName",
 
             /**
+             * Resource count input HTML element identifier.
+             */
+            RESOURCE_COUNT_ELEMENT_ID: "resourceCount",
+
+            /**
              * User email input HTML element identifier.
              */
             USER_EMAIL_ELEMENT_ID: "userEmail",

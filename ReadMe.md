@@ -19,6 +19,8 @@ The **Azure DevOps Gantt (A-DOG)** tool is used to generate a [Mermaid JS](https
 - [ ] Setup an `xtask` workspace for pseudo-libman for web, GitHub page updates and any other build tasks that are needed.
 - [ ] Allow user to have multiple contexts.
 - [ ] Add ability for the feature to be built out in A-DOG, once done then click "Deploy" to create all of the child work items according to the structure defined.
+- [ ] Allow user to change the sanitization replace character. Default will be an underscore (_).
+- [ ] Scale font size of dependency chart based on effort, where the floor is the standard 16px font.
 
 ## Usage
 

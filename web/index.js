@@ -127,7 +127,14 @@ async function handleFormOnSubmit(event) {
             .filter(node => node.parentNodeIndices.every(parentNodeIndex =>
                 scheduledWorkItemIds.includes(childWorkItems[parentNodeIndex].id)
             ))
-            .map(node => node.data);
+            .map(node => node.data)
+            .sort((workItemA, workItemB) => {
+                if (workItemA.fields["Microsoft.VSTS.Common.Priority"] !== workItemB.fields["Microsoft.VSTS.Common.Priority"]) {
+                    return workItemA.fields["Microsoft.VSTS.Common.Priority"] - workItemB.fields["Microsoft.VSTS.Common.Priority"];
+                }
+
+                return workItemB.fields["Microsoft.VSTS.Scheduling.RemainingWork"] - workItemA.fields["Microsoft.VSTS.Scheduling.RemainingWork"];
+            });
 
         workItemsToBeScheduled.forEach(workItemToBeScheduled => {
             const workItemTitle = workItemToBeScheduled.fields["System.Title"].replace(':', '_');
@@ -177,7 +184,10 @@ async function handleWindowOnLoad() {
     const settings = previousSettings ? JSON.parse(previousSettings) : Settings;
 
     document.getElementById(Constants.userInterface.DEPENDENCY_RELATION_ELEMENT_ID)
-        .value = settings.dependencyRelation ?? "";
+        .value = settings.dependencyRelation;
+
+    document.getElementById(Constants.userInterface.RESOURCE_COUNT_ELEMENT_ID)
+        .value = settings.resourceCount;
 
     document
         .querySelector(
