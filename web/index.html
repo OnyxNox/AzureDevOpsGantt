@@ -9,12 +9,15 @@
 </head>
 
 <body>
-    <div class="panel">
-        <input type="checkbox" id="contextToggle" class="panelToggle" />
-        <label for="contextToggle" class="panelLabel" title="Toggle the context panel">Ctx</label>
+    <div id="controlPanel">
+        <input type="checkbox" id="controlPanelToggle" />
+        <label for="controlPanelToggle" id="controlPanelTab" title="Toggle the control panel">
+            Ctrl
+        </label>
 
-        <div class="panelContent">
-            <h1>Context</h1>
+        <div id="controlPanelContent">
+            <h1>Control Panel</h1>
+            <h2>Context</h2>
             <form onsubmit="handleFormOnSubmit(event)">
                 <div class="formControl">
                     <label for="organizationName">Organization Name</label>
@@ -42,6 +45,20 @@
                 </div>
                 <button type="submit">Generate</button>
             </form>
+        </div>
+    </div>
+
+    <div id="actionBar">
+        <div class="buttonRadioGroup">
+            <label>
+                <input type="radio" name="diagramType" value="gantt" onchange="handleDiagramTypeChange(event)"
+                    checked />
+                Gantt
+            </label>
+            <label>
+                <input type="radio" name="diagramType" value="dependency" onchange="handleDiagramTypeChange(event)" />
+                Dependency
+            </label>
         </div>
     </div>
 

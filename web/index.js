@@ -25,6 +25,15 @@ const getDateString = (date) => {
     return `${year}-${month}-${day}`;
 };
 
+async function handleDiagramTypeChange(event) {
+    const diagram = event.target.value == "gantt"
+        ? localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY)
+        : localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
+
+    document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML =
+        (await mermaid.render("updatedGraph", diagram)).svg;
+}
+
 /**
  * Handle the form's onSubmit event.
  */
@@ -120,10 +129,11 @@ async function handleFormOnSubmit(event) {
 
     localStorage.setItem(Constants.localStorage.GANTT_DIAGRAM_KEY, ganttDiagram);
 
-    document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML
-        = (await mermaid.render("updatedGraph", dependencyDiagram)).svg;
+    document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML =
+        (await mermaid.render("updatedGraph", dependencyDiagram)).svg;
 
-    document.getElementById(Constants.userInterface.CONTEXT_TOGGLE_ELEMENT_ID).checked = false;
+    document.getElementById(Constants.userInterface.CONTROL_PANEL_TOGGLE_ELEMENT_ID).checked =
+        false;
 }
 
 /**
@@ -146,27 +156,20 @@ async function handleWindowOnLoad() {
         document.getElementById(Constants.userInterface.USER_EMAIL_ELEMENT_ID).value =
             formData.userEmail ?? "";
     } else {
-        document.getElementById(Constants.userInterface.CONTEXT_TOGGLE_ELEMENT_ID).checked = true;
+        document.getElementById(Constants.userInterface.CONTROL_PANEL_TOGGLE_ELEMENT_ID).checked =
+            true;
     }
 
-    const previousDependencyGraph =
-        localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
+    const previousGanttDiagram = localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY);
 
-    if (previousDependencyGraph) {
+    if (previousGanttDiagram) {
         document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML
-            = (await mermaid.render("updatedGraph", previousDependencyGraph)).svg;
+            = (await mermaid.render("updatedGraph", previousGanttDiagram)).svg;
+    } else {
+        document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML
+            = "No previous context has been found; please fill out context panel and click the "
+            + "<b>Generate</b> button.";
+
+        document.getElementById(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID).focus();
     }
-
-    // const previousGanttDiagram = localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY);
-
-    // if (previousGanttDiagram) {
-    //     document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML
-    //         = (await mermaid.render("updatedGraph", previousGanttDiagram)).svg;
-    // } else {
-    //     document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML
-    //         = "No previous context has been found; please fill out context panel and click the "
-    //         + "<b>Generate</b> button.";
-
-    //     document.getElementById(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID).focus();
-    // }
 }

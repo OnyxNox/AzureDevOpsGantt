@@ -28,9 +28,9 @@ const Constants = (function () {
          */
         userInterface: {
             /**
-             * Context toggle checkbox HTML element identifier.
+             * Control panel toggle checkbox HTML element identifier.
              */
-            CONTEXT_TOGGLE_ELEMENT_ID: "contextToggle",
+            CONTROL_PANEL_TOGGLE_ELEMENT_ID: "controlPanelToggle",
 
             /**
              * Dependency relation input HTML element identifier.

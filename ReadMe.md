@@ -8,7 +8,6 @@ The **Azure DevOps Gantt (A-DOG)** tool is used to generate a [Mermaid JS](https
 - [ ] Add a SVG viewer to allow for scrolling the diagrams, something similar to [GitHub's implementation](https://github.com/mermaid-js/mermaid?tab=readme-ov-file#gantt-chart-docs---live-editor).
 - [ ] Add ability to provide number of resources assigned to the feature, and split the child work items in the Gantt diagram based on the count.
 - [ ] Add ability to create resource-specific blockers to better assign child work items and/or give better timeline estimates with the circumstances.
-- [ ] Add ability to switch between child work item dependency graph and the Gantt diagram.
 - [ ] Add an automatic refresh feature so that the diagrams update as the feature is being set up.
 - [ ] Update authentication to something more modern and move away from person access tokens.
 - [ ] Setup an `xtask` workspace for pseudo-libman for web and any other build tasks that are needed.

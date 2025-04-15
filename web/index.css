@@ -1,18 +1,20 @@
 :root {
+    --color-primary: rgb(120, 0, 212);
+    --color-secondary: rgb(47, 47, 47);
+    --control-panel-background-color: rgb(23, 23, 23);
+    --control-panel-border-color: rgb(43, 43, 43);
+    --control-panel-border-radius: 8px;
+    --control-panel-border-width: 1px;
+    --control-panel-padding: 11px;
+    --control-panel-width: 430px;
+    --control-panel-z-index: 100;
     --page-background-color: rgb(31, 31, 31);
     --page-color: white;
-    --panel-background-color: rgb(23, 23, 23);
-    --panel-border-color: rgb(43, 43, 43);
-    --panel-border-radius: 8px;
-    --panel-border-width: 1px;
-    --panel-control-padding-x: 8px;
+    --panel-control-padding-x: 13px;
     --panel-control-padding-y: 6px;
     --panel-drop-shadow-x: 5px;
     --panel-drop-shadow: drop-shadow(var(--panel-drop-shadow-x) 7px var(--panel-drop-shadow-x) rgba(0, 0, 0, 0.65));
     --panel-transition-length: 0.23s;
-    --panel-width: 430px;
-    --panel-z-index: 100;
-    --color-primary: rgb(120, 0, 212);
 }
 
 * {
@@ -26,12 +28,125 @@ body {
     color: var(--page-color);
     display: flex;
     flex: 1;
+    flex-direction: column;
     font-family: Arial, sans-serif;
     height: 100%;
     justify-content: center;
     margin: 0;
     padding: 0;
     width: 100%;
+}
+
+#controlPanel {
+    left: 0;
+    margin-top: 13px;
+    opacity: 0.65;
+    position: fixed;
+    top: 0;
+    z-index: calc(var(--control-panel-z-index) - 1);
+}
+
+#controlPanel:hover {
+    opacity: 0.85;
+}
+
+#controlPanel:has(#controlPanelToggle:checked) {
+    opacity: 1.0;
+}
+
+#controlPanelContent {
+    background-color: var(--control-panel-background-color);
+    border: var(--control-panel-border-width) solid var(--control-panel-border-color);
+    border-left-width: 0;
+    border-bottom-right-radius: var(--control-panel-border-radius);
+    filter: var(--panel-drop-shadow);
+    left: calc((var(--control-panel-width) * -1) - var(--panel-drop-shadow-x));
+    padding: var(--control-panel-padding);
+    position: fixed;
+    transition: left var(--panel-transition-length);
+    width: var(--control-panel-width);
+}
+
+#controlPanelContent h1 {
+    color: var(--color-primary);
+    filter: drop-shadow(3px 3px 0 black);
+    margin-top: 0;
+}
+
+#controlPanelContent form {
+    display: flex;
+    flex-direction: column;
+}
+
+#controlPanelContent .formControl {
+    align-items: center;
+    display: flex;
+    margin-bottom: 12px;
+}
+
+#controlPanelContent .formControl label {
+    flex: 1;
+    font-weight: bold;
+}
+
+#controlPanelContent input {
+    background-color: rgb(51, 51, 51);
+    border: 1px solid rgb(51, 51, 51);
+    border-radius: 4px;
+    color: var(--page-color);
+    outline: none;
+    padding: var(--panel-control-padding-y) var(--panel-control-padding-x);
+    width: 210px;
+}
+
+#controlPanelContent input:focus {
+    border: 1px solid var(--color-primary);
+}
+
+#controlPanelContent button[type="submit"] {
+    align-self: flex-end;
+    background-color: var(--color-primary);
+    border-radius: 4px;
+    border: 0;
+    color: var(--page-color);
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-variant: small-caps;
+    padding: var(--panel-control-padding-y) var(--panel-control-padding-x);
+}
+
+#controlPanelContent button[type="submit"]:hover {
+    filter: brightness(90%);
+}
+
+#controlPanelTab {
+    background-color: var(--control-panel-background-color);
+    border: var(--control-panel-border-width) solid var(--control-panel-border-color);
+    border-left-width: 0;
+    border-radius: 0 var(--control-panel-border-radius) var(--control-panel-border-radius) 0;
+    cursor: pointer;
+    filter: var(--panel-drop-shadow);
+    font-size: 1.3rem;
+    font-variant: small-caps;
+    padding: var(--panel-control-padding-y) var(--panel-control-padding-x);
+    padding-left: calc(var(--panel-control-padding-x) + var(--control-panel-border-width));
+    position: fixed;
+    left: calc((var(--panel-drop-shadow-x) * -1));
+    transition: left var(--panel-transition-length);
+    z-index: var(--control-panel-z-index);
+}
+
+#controlPanelToggle {
+    display: none;
+}
+
+#controlPanelToggle:checked+#controlPanelTab {
+    left: calc(var(--control-panel-width) - var(--control-panel-border-width));
+    color: var(--color-primary);
+}
+
+#controlPanelToggle:checked+#controlPanelTab+#controlPanelContent {
+    left: 0;
 }
 
 #mermaidDiagramOutput {
@@ -42,108 +157,30 @@ body {
     width: 100%;
 }
 
-.panel {
-    left: 0;
+.buttonRadioGroup {
+    display: flex;
+    flex-direction: row;
     margin-top: 16px;
-    opacity: 0.65;
-    position: fixed;
-    top: 0;
-    z-index: calc(var(--panel-z-index) - 1);
 }
 
-.panel:hover {
-    opacity: 0.85;
+.buttonRadioGroup>label {
+    background-color: var(--color-secondary);
+    cursor: pointer;
+    padding: 16px;
 }
 
-.panel:has(.panelToggle:checked) {
-    opacity: 1.0;
+.buttonRadioGroup>label:first-child {
+    border-radius: 13px 0 0 13px;
 }
 
-.panelContent {
-    background-color: var(--panel-background-color);
-    border: var(--panel-border-width) solid var(--panel-border-color);
-    border-left-width: 0;
-    border-bottom-right-radius: var(--panel-border-radius);
-    filter: var(--panel-drop-shadow);
-    left: calc((var(--panel-width) * -1) - var(--panel-drop-shadow-x));
-    padding: var(--panel-control-padding-y) var(--panel-control-padding-x);
-    position: fixed;
-    transition: left var(--panel-transition-length);
-    width: var(--panel-width);
+.buttonRadioGroup>label:last-child {
+    border-radius: 0 13px 13px 0;
 }
 
-.panelContent form {
-    display: flex;
-    flex-direction: column;
-}
-
-.panelContent .formControl {
-    align-items: center;
-    display: flex;
-    margin-bottom: 12px;
-}
-
-.panelContent .formControl label {
-    flex: 1;
-    font-weight: bold;
-}
-
-.panelContent input {
-    background-color: rgb(51, 51, 51);
-    border: 1px solid rgb(51, 51, 51);
-    border-radius: 4px;
-    color: var(--page-color);
-    outline: none;
-    padding: var(--panel-control-padding-y) var(--panel-control-padding-x);
-    width: 210px;
-}
-
-.panelContent input:focus {
-    border: 1px solid var(--color-primary);
-}
-
-.panelContent button[type="submit"] {
-    align-self: flex-end;
+.buttonRadioGroup>label:has(input[type="radio"]:checked) {
     background-color: var(--color-primary);
-    border-radius: 4px;
-    border: 0;
-    color: var(--page-color);
-    cursor: pointer;
-    font-size: 1.1rem;
-    font-variant: small-caps;
-    margin: 16px 0;
-    padding: var(--panel-control-padding-y) var(--panel-control-padding-x);
 }
 
-.panelContent button[type="submit"]:hover {
-    filter: brightness(90%);
-}
-
-.panelLabel {
-    background-color: var(--panel-background-color);
-    border: var(--panel-border-width) solid var(--panel-border-color);
-    border-left-width: 0;
-    border-radius: 0 var(--panel-border-radius) var(--panel-border-radius) 0;
-    cursor: pointer;
-    filter: var(--panel-drop-shadow);
-    font-size: 1.3rem;
-    font-variant: small-caps;
-    padding: var(--panel-control-padding-y) var(--panel-control-padding-x);
-    padding-left: calc(var(--panel-control-padding-x) + var(--panel-border-width));
-    position: fixed;
-    left: calc((var(--panel-drop-shadow-x) * -1));
-    transition: left var(--panel-transition-length);
-    z-index: var(--panel-z-index);
-}
-
-.panelToggle {
+.buttonRadioGroup>label>input[type="radio"] {
     display: none;
-}
-
-.panelToggle:checked+.panelLabel {
-    left: calc(var(--panel-width) - var(--panel-border-width));
-}
-
-.panelToggle:checked+.panelLabel+.panelContent {
-    left: 0;
 }
