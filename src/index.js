@@ -121,8 +121,8 @@ async function handleFormOnSubmit(event) {
 
     let ganttDiagram = "gantt\n    dateFormat YYYY-MM-DD\n    excludes weekends\n"
     ganttDiagram += "    Section Milestones\n";
-    ganttDiagram +=
-        `    Feature Start : milestone, featureStart, ${getDateString(featureStartDate)}, 1d\n`;
+    ganttDiagram += `    Feature Start : milestone`
+        + `, featureStart, ${getDateString(featureStartDate)}, 1${Settings.effortFieldTimeSpan}\n`;
     ganttDiagram += "    Section Default\n";
 
     let scheduledWorkItemIds = [];
@@ -148,7 +148,7 @@ async function handleFormOnSubmit(event) {
                 .replace(/[^a-zA-Z0-9 ]/g, Settings.sanitizationReplacement);
             const workItemEffort = workItemToBeScheduled.fields[Settings.effortField];
 
-            ganttDiagram += `    ${workItemTitle} : ${workItemEffort}d\n`;
+            ganttDiagram += `    ${workItemTitle} : ${workItemEffort}${Settings.effortFieldTimeSpan}\n`;
 
             scheduledWorkItemIds.push(workItemToBeScheduled.id);
         });
@@ -156,13 +156,11 @@ async function handleFormOnSubmit(event) {
 
     localStorage.setItem(Constants.localStorage.GANTT_DIAGRAM_KEY, ganttDiagram);
 
-    const selectedDiagramType = document
-        .querySelector('input[type="radio"][name="diagramType"]:checked')
-        .value == DiagramType.Gantt
+    const diagramType = Settings.selectedDiagramType == DiagramType.Gantt
         ? ganttDiagram : dependencyDiagram;
 
     document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID)
-        .innerHTML = (await mermaid.render("updatedGraph", selectedDiagramType)).svg;
+        .innerHTML = (await mermaid.render("updatedGraph", diagramType)).svg;
 
     document.getElementById(Constants.userInterface.CONTROL_PANEL_TOGGLE_ELEMENT_ID)
         .checked = false;
