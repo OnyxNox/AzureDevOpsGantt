@@ -17,7 +17,7 @@ function DiagramClient(dependencyGraph) {
                 const workItemTitle = node
                     .data
                     .fields[Settings.titleField]
-                    .replace(/[^a-zA-Z0-9 ]/g, Settings.sanitizationReplacement);
+                    .sanitizeMermaidTitle();
 
                 return `    ${node.data.id}[${workItemTitle}]`;
             })
@@ -68,7 +68,7 @@ function DiagramClient(dependencyGraph) {
             workItemsToBeScheduled.forEach(workItemToBeScheduled => {
                 const workItemTitle = workItemToBeScheduled
                     .fields[Settings.titleField]
-                    .replace(/[^a-zA-Z0-9 ]/g, Settings.sanitizationReplacement);
+                    .sanitizeMermaidTitle();
                 const workItemEffort = workItemToBeScheduled.fields[Settings.effortField];
 
                 ganttDiagram += `    ${workItemTitle} : ${workItemEffort}`
