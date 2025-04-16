@@ -46,15 +46,15 @@ async function handleDiagramTypeChange(diagramType) {
 async function handleFormOnSubmit(event) {
     event.preventDefault();
 
+    document.getElementById(Constants.userInterface.LOADING_OVERLAY_ELEMENT_ID)
+        .classList.add("show");
+
     const formData = new FormData(event.target);
     const context = {
-        dependencyRelation: formData.get(Constants.userInterface.DEPENDENCY_RELATION_ELEMENT_ID)
-            ?? "",
-        featureWorkItemId: formData.get(Constants.userInterface.FEATURE_WORK_ITEM_ID_ELEMENT_ID)
-            ?? 0,
-        organizationName: formData.get(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID) ?? "",
-        projectName: formData.get(Constants.userInterface.PROJECT_NAME_ELEMENT_ID) ?? "",
-        userEmail: formData.get(Constants.userInterface.USER_EMAIL_ELEMENT_ID) ?? "",
+        featureWorkItemId: formData.get(Constants.userInterface.FEATURE_WORK_ITEM_ID_ELEMENT_ID),
+        organizationName: formData.get(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID),
+        projectName: formData.get(Constants.userInterface.PROJECT_NAME_ELEMENT_ID),
+        userEmail: formData.get(Constants.userInterface.USER_EMAIL_ELEMENT_ID),
     };
 
     Settings.dependencyRelation =
@@ -66,7 +66,7 @@ async function handleFormOnSubmit(event) {
 
     const azureDevOpsClient = new AzureDevOpsClient(
         context.userEmail,
-        formData.get("personalAccessToken"),
+        formData.get(Constants.userInterface.PERSON_ACCESS_TOKEN_ELEMENT_ID),
         context.organizationName,
         context.projectName,
     );
@@ -100,7 +100,14 @@ async function handleFormOnSubmit(event) {
 
     let dependencyDiagram = "flowchart TD\n";
     dependencyDiagram += dependencyGraphNodes
-        .map(node => `    ${node.data.id}[${node.data.fields["System.Title"]}]`)
+        .map(node => {
+            const workItemTitle = node
+                .data
+                .fields[Settings.titleField]
+                .replace(/[^a-zA-Z0-9 ]/g, Settings.sanitizationReplacement);
+
+            return `    ${node.data.id}[${workItemTitle}]`;
+        })
         .join('\n');
     dependencyDiagram += '\n' + dependencyGraphNodes
         .flatMap(node => node.parentNodeIndices.map(parentNodeIndex =>
@@ -110,8 +117,7 @@ async function handleFormOnSubmit(event) {
 
     localStorage.setItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY, dependencyDiagram);
 
-    const featureStartDate =
-        new Date(featureWorkItem.fields["Microsoft.VSTS.Scheduling.StartDate"]);
+    const featureStartDate = new Date(featureWorkItem.fields[Settings.featureStartDateField]);
 
     let ganttDiagram = "gantt\n    dateFormat YYYY-MM-DD\n    excludes weekends\n"
     ganttDiagram += "    Section Milestones\n";
@@ -129,17 +135,20 @@ async function handleFormOnSubmit(event) {
             ))
             .map(node => node.data)
             .sort((workItemA, workItemB) => {
-                if (workItemA.fields["Microsoft.VSTS.Common.Priority"] !== workItemB.fields["Microsoft.VSTS.Common.Priority"]) {
-                    return workItemA.fields["Microsoft.VSTS.Common.Priority"] - workItemB.fields["Microsoft.VSTS.Common.Priority"];
+                if (workItemA.fields[Settings.priorityField] !== workItemB.fields[Settings.priorityField]) {
+                    return workItemA.fields[Settings.priorityField] - workItemB.fields[Settings.priorityField];
                 }
 
-                return workItemB.fields["Microsoft.VSTS.Scheduling.RemainingWork"] - workItemA.fields["Microsoft.VSTS.Scheduling.RemainingWork"];
+                return workItemB.fields[Settings.effortField] - workItemA.fields[Settings.effortField];
             });
 
         workItemsToBeScheduled.forEach(workItemToBeScheduled => {
-            const workItemTitle = workItemToBeScheduled.fields["System.Title"].replace(':', '_');
+            const workItemTitle = workItemToBeScheduled
+                .fields[Settings.titleField]
+                .replace(/[^a-zA-Z0-9 ]/g, Settings.sanitizationReplacement);
+            const workItemEffort = workItemToBeScheduled.fields[Settings.effortField];
 
-            ganttDiagram += `    ${workItemTitle} : ${workItemToBeScheduled.fields["Microsoft.VSTS.Scheduling.RemainingWork"]}d\n`;
+            ganttDiagram += `    ${workItemTitle} : ${workItemEffort}d\n`;
 
             scheduledWorkItemIds.push(workItemToBeScheduled.id);
         });
@@ -147,15 +156,19 @@ async function handleFormOnSubmit(event) {
 
     localStorage.setItem(Constants.localStorage.GANTT_DIAGRAM_KEY, ganttDiagram);
 
-    const selectedDiagramType =
-        document.querySelector('input[type="radio"][name="diagramType"]:checked').value == "gantt"
-            ? ganttDiagram : dependencyDiagram;
+    const selectedDiagramType = document
+        .querySelector('input[type="radio"][name="diagramType"]:checked')
+        .value == DiagramType.Gantt
+        ? ganttDiagram : dependencyDiagram;
 
-    document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID).innerHTML =
-        (await mermaid.render("updatedGraph", selectedDiagramType)).svg;
+    document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID)
+        .innerHTML = (await mermaid.render("updatedGraph", selectedDiagramType)).svg;
 
-    document.getElementById(Constants.userInterface.CONTROL_PANEL_TOGGLE_ELEMENT_ID).checked =
-        false;
+    document.getElementById(Constants.userInterface.CONTROL_PANEL_TOGGLE_ELEMENT_ID)
+        .checked = false;
+
+    document.getElementById(Constants.userInterface.LOADING_OVERLAY_ELEMENT_ID)
+        .classList.remove("show");
 }
 
 /**

@@ -48,6 +48,11 @@ const Constants = (function () {
             FEATURE_WORK_ITEM_ID_ELEMENT_ID: "featureWorkItemId",
 
             /**
+             * Loading overlay HTML element identifier.
+             */
+            LOADING_OVERLAY_ELEMENT_ID: "loadingOverlay",
+
+            /**
              * Mermaid diagram output HTML element identifier.
              */
             MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID: "mermaidDiagramOutput",
@@ -56,6 +61,11 @@ const Constants = (function () {
              * Organization name input HTML element identifier.
              */
             ORGANIZATION_NAME_ELEMENT_ID: "organizationName",
+
+            /**
+             * Person access token input HTML element identifier.
+             */
+            PERSON_ACCESS_TOKEN_ELEMENT_ID: "personalAccessToken",
 
             /**
              * Project name input HTML element identifier.
