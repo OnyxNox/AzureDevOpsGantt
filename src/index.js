@@ -9,22 +9,6 @@ const mermaidConfiguration = {
 
 mermaid.initialize(mermaidConfiguration);
 
-/**
- * Get work item identifier from a direct work item URL.
- * @param {string} workItemUrl Direct work item URL.
- * @returns {number} Work item identifier.
- */
-const getWorkItemIdFromUrl = (workItemUrl) =>
-    parseInt(workItemUrl.substring(workItemUrl.lastIndexOf('/') + 1), 10);
-
-const getDateString = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-};
-
 async function handleDiagramTypeChange(diagramType) {
     Settings.selectedDiagramType = diagramType;
 
@@ -41,7 +25,7 @@ async function handleDiagramTypeChange(diagramType) {
 }
 
 /**
- * Handle the form's onSubmit event.
+ * Handle the control panel form's onSubmit event.
  */
 async function handleFormOnSubmit(event) {
     event.preventDefault();
@@ -96,63 +80,15 @@ async function handleFormOnSubmit(event) {
                 dependencyGraph.addEdge(childWorkItemIndex, dependencyWorkItemIndex));
     });
 
-    let dependencyGraphNodes = dependencyGraph.getNodes();
+    const diagramClient = new DiagramClient(dependencyGraph);
 
-    let dependencyDiagram = "flowchart TD\n";
-    dependencyDiagram += dependencyGraphNodes
-        .map(node => {
-            const workItemTitle = node
-                .data
-                .fields[Settings.titleField]
-                .replace(/[^a-zA-Z0-9 ]/g, Settings.sanitizationReplacement);
-
-            return `    ${node.data.id}[${workItemTitle}]`;
-        })
-        .join('\n');
-    dependencyDiagram += '\n' + dependencyGraphNodes
-        .flatMap(node => node.parentNodeIndices.map(parentNodeIndex =>
-            `    ${dependencyGraphNodes[parentNodeIndex].data.id} --> ${node.data.id}`
-        ))
-        .join('\n');
+    let dependencyDiagram = diagramClient.getDependencyDiagram();
 
     localStorage.setItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY, dependencyDiagram);
 
     const featureStartDate = new Date(featureWorkItem.fields[Settings.featureStartDateField]);
 
-    let ganttDiagram = "gantt\n    dateFormat YYYY-MM-DD\n    excludes weekends\n"
-    ganttDiagram += "    Section Milestones\n";
-    ganttDiagram += `    Feature Start : milestone`
-        + `, featureStart, ${getDateString(featureStartDate)}, 1${Settings.effortFieldTimeSpan}\n`;
-    ganttDiagram += "    Section Default\n";
-
-    let scheduledWorkItemIds = [];
-
-    while (scheduledWorkItemIds.length < childWorkItems.length) {
-        let workItemsToBeScheduled = dependencyGraphNodes
-            .filter(node => !scheduledWorkItemIds.includes(node.data.id))
-            .filter(node => node.parentNodeIndices.every(parentNodeIndex =>
-                scheduledWorkItemIds.includes(childWorkItems[parentNodeIndex].id)
-            ))
-            .map(node => node.data)
-            .sort((workItemA, workItemB) => {
-                if (workItemA.fields[Settings.priorityField] !== workItemB.fields[Settings.priorityField]) {
-                    return workItemA.fields[Settings.priorityField] - workItemB.fields[Settings.priorityField];
-                }
-
-                return workItemB.fields[Settings.effortField] - workItemA.fields[Settings.effortField];
-            });
-
-        workItemsToBeScheduled.forEach(workItemToBeScheduled => {
-            const workItemTitle = workItemToBeScheduled
-                .fields[Settings.titleField]
-                .replace(/[^a-zA-Z0-9 ]/g, Settings.sanitizationReplacement);
-            const workItemEffort = workItemToBeScheduled.fields[Settings.effortField];
-
-            ganttDiagram += `    ${workItemTitle} : ${workItemEffort}${Settings.effortFieldTimeSpan}\n`;
-
-            scheduledWorkItemIds.push(workItemToBeScheduled.id);
-        });
-    }
+    const ganttDiagram = diagramClient.getGanttDiagram(featureStartDate);
 
     localStorage.setItem(Constants.localStorage.GANTT_DIAGRAM_KEY, ganttDiagram);
 
