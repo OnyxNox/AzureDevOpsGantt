@@ -1,11 +1,6 @@
 {
     "extensions": {
-        "recommendations": [
-            "fill-labs.dependi",
-            "ms-vscode.cpptools",
-            "rust-lang.rust-analyzer",
-            "tamasfe.even-better-toml"
-        ]
+        "recommendations": []
     },
     "folders": [
         {
@@ -14,26 +9,9 @@
     ],
     "launch": {
         "version": "0.2.0",
-        "configurations": [
-            {
-                "name": "Debug",
-                "type": "cppvsdbg",
-                "request": "launch",
-                "preLaunchTask": "build",
-                "program": "${workspaceRoot}/target/debug/azure_dev_ops_gantt.exe",
-                "cwd": "${workspaceRoot}",
-                "args": [
-                    "--log-level",
-                    "trace",
-                    "--log-responses",
-                    "1"
-                ],
-                "stopAtEntry": false
-            },
-        ]
+        "configurations": []
     },
     "settings": {
-        "debug.allowBreakpointsEverywhere": true,
         "editor.formatOnSave": true,
         "editor.rulers": [
             100,
@@ -42,15 +20,6 @@
     },
     "tasks": {
         "version": "2.0.0",
-        "tasks": [
-            {
-                "label": "build",
-                "type": "shell",
-                "command": "cargo build",
-                "problemMatcher": [
-                    "$rustc"
-                ]
-            }
-        ]
+        "tasks": []
     }
 }
