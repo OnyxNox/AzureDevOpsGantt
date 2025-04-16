@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Azure DevOps Gantt (A-DOG)</title>
+    <link href="./index.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div id="loadingOverlay"></div>
+    <div id="controlPanel">
+        <input type="checkbox" id="controlPanelToggle" />
+        <label for="controlPanelToggle" id="controlPanelTab" title="Toggle the control panel">
+            Ctrl
+        </label>
+
+        <div id="controlPanelContent">
+            <h1>Control Panel</h1>
+            <form onsubmit="handleFormOnSubmit(event)">
+                <h2>Context</h2>
+                <div class="formControl">
+                    <label for="organizationName">Organization Name</label>
+                    <input type="text" id="organizationName" name="organizationName" required />
+                </div>
+                <div class="formControl">
+                    <label for="projectName">Project Name</label>
+                    <input type="text" id="projectName" name="projectName" required />
+                </div>
+                <div class="formControl">
+                    <label for="featureWorkItemId">Feature Work Item ID</label>
+                    <input type="text" id="featureWorkItemId" name="featureWorkItemId" required />
+                </div>
+                <div class="formControl">
+                    <label for="userEmail">User Email</label>
+                    <input type="email" id="userEmail" name="userEmail" required />
+                </div>
+                <div class="formControl">
+                    <label for="personalAccessToken">Personal Access Token</label>
+                    <input type="password" id="personalAccessToken" name="personalAccessToken" required />
+                </div>
+                <h2>Settings</h2>
+                <div class="formControl">
+                    <label for="dependencyRelation">Dependency Relation</label>
+                    <input type="text" id="dependencyRelation" name="dependencyRelation" required />
+                </div>
+                <div class="formControl">
+                    <label for="resourceCount">Resource Count</label>
+                    <input type="number" id="resourceCount" name="resourceCount" min="1" max="100" required />
+                </div>
+                <button type="submit">Generate</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="actionBar">
+        <div class="buttonRadioGroup">
+            <label>
+                <input type="radio" name="diagramType" value="gantt"
+                    onchange="handleDiagramTypeChange(event.target.value)" />
+                Gantt
+            </label>
+            <label>
+                <input type="radio" name="diagramType" value="dependency"
+                    onchange="handleDiagramTypeChange(event.target.value)" />
+                Dependency
+            </label>
+        </div>
+    </div>
+
+    <div id="mermaidDiagramOutput"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.5.0/mermaid.min.js"
+        integrity="sha512-3EZqKCkk3nMLmbrI7mfry81KH7dkzy/BoDfQrodwLQnS/RbsVlERdYP6J0oiJegRUxSOmx7Y35WNbVKSw7mipw=="
+        crossorigin="anonymous"></script>
+    <script src="./azure_dev_ops_client.js"></script>
+    <script src="./constants.js"></script>
+    <script src="./dependency_graph.js"></script>
+    <script src="./models.js"></script>
+    <script src="./index.js"></script>
+</body>
+
+</html>
