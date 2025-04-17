@@ -47,7 +47,8 @@
                 </div>
                 <div class="formControl">
                     <label for="resourceCount">Resource Count</label>
-                    <input type="number" id="resourceCount" name="resourceCount" min="1" max="100" required />
+                    <input type="number" id="resourceCount" name="resourceCount" min="1" max="100"
+                        onchange="cacheSetting(event.target.name, parseInt(event.target.value, 10))" required />
                 </div>
                 <button type="submit">Generate</button>
             </form>
@@ -74,13 +75,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.5.0/mermaid.min.js"
         integrity="sha512-3EZqKCkk3nMLmbrI7mfry81KH7dkzy/BoDfQrodwLQnS/RbsVlERdYP6J0oiJegRUxSOmx7Y35WNbVKSw7mipw=="
         crossorigin="anonymous"></script>
+
     <script src="./azure_dev_ops_client.js"></script>
     <script src="./constants.js"></script>
     <script src="./dependency_graph.js"></script>
     <script src="./diagram_client.js"></script>
     <script src="./extensions.js"></script>
     <script src="./models.js"></script>
+    <script src="./resource_scheduler.js"></script>
     <script src="./utility.js"></script>
+
     <script src="./index.js"></script>
 </body>
 
