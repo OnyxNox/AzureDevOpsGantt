@@ -18,7 +18,7 @@
 
         <div id="controlPanelContent">
             <h1>Control Panel</h1>
-            <form onsubmit="handleFormOnSubmit(event)">
+            <form onsubmit="ControlPanel.handleFormOnSubmit(event)">
                 <h2>Context</h2>
                 <div class="formControl">
                     <label for="organizationName">Organization Name</label>
@@ -59,12 +59,12 @@
         <div class="buttonRadioGroup">
             <label>
                 <input type="radio" name="diagramType" value="gantt"
-                    onchange="handleDiagramTypeChange(event.target.value)" />
+                    onchange="cacheSetting(event.target.name, event.target.value)" />
                 Gantt
             </label>
             <label>
                 <input type="radio" name="diagramType" value="dependency"
-                    onchange="handleDiagramTypeChange(event.target.value)" />
+                    onchange="cacheSetting(event.target.name, event.target.value)" />
                 Dependency
             </label>
         </div>
@@ -78,6 +78,7 @@
 
     <script src="./azure_dev_ops_client.js"></script>
     <script src="./constants.js"></script>
+    <script src="./control_panel.js"></script>
     <script src="./dependency_graph.js"></script>
     <script src="./diagram_client.js"></script>
     <script src="./extensions.js"></script>

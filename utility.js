@@ -1,10 +1,22 @@
 /**
- * Get work item identifier from a direct work item URL.
- * @param {string} workItemUrl Direct work item URL.
- * @returns {number} Work item identifier.
+ * Write setting to local storage and refresh diagram from local storage.
+ * @param {string} key Settings field key.
+ * @param {any} value Settings field value.
  */
-const getWorkItemIdFromUrl = (workItemUrl) =>
-    parseInt(workItemUrl.substring(workItemUrl.lastIndexOf('/') + 1), 10);
+async function cacheSetting(key, value) {
+    Settings[key] = value;
+
+    localStorage.setItem(Constants.localStorage.SETTINGS_KEY, JSON.stringify(Settings));
+
+    const selectedDiagram = Settings.diagramType === DiagramType.Gantt
+        ? localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY)
+        : localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
+
+    if (selectedDiagram) {
+        document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID)
+            .innerHTML = (await mermaid.render("updatedGraph", selectedDiagram)).svg;
+    }
+}
 
 /**
  * Get date string from a Date in the format of 'YYYY-MM-DD'.
