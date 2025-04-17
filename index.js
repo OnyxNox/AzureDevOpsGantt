@@ -9,6 +9,12 @@ const mermaidConfiguration = {
 
 mermaid.initialize(mermaidConfiguration);
 
+function cacheSetting(key, value) {
+    Settings[key] = value;
+
+    localStorage.setItem(Constants.localStorage.SETTINGS_KEY, JSON.stringify(Settings));
+}
+
 async function handleDiagramTypeChange(diagramType) {
     Settings.selectedDiagramType = diagramType;
 
@@ -132,9 +138,11 @@ async function handleWindowOnLoad() {
 
     document.getElementById(Constants.userInterface.DEPENDENCY_RELATION_ELEMENT_ID)
         .value = settings.dependencyRelation;
+    Settings.dependencyRelation = settings.dependencyRelation;
 
     document.getElementById(Constants.userInterface.RESOURCE_COUNT_ELEMENT_ID)
         .value = settings.resourceCount;
+    Settings.resourceCount = settings.resourceCount;
 
     document
         .querySelector(

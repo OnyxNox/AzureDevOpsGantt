@@ -6,6 +6,7 @@
 function DiagramClient(dependencyGraph) {
     /**
      * Get Azure DevOps Feature child work items dependency diagram.
+     * @returns Mermaid JS flowchart showing the hierarchy of Azure DevOps Feature child work items.
      */
     this.getDependencyDiagram = function () {
         let dependencyGraphNodes = dependencyGraph.getNodes();
@@ -14,10 +15,7 @@ function DiagramClient(dependencyGraph) {
 
         dependencyDiagram += dependencyGraphNodes
             .map(node => {
-                const workItemTitle = node
-                    .data
-                    .fields[Settings.titleField]
-                    .sanitizeMermaidTitle();
+                const workItemTitle = node.data.fields[Settings.titleField].sanitizeMermaidTitle();
 
                 return `    ${node.data.id}[${workItemTitle}]`;
             })
@@ -35,49 +33,77 @@ function DiagramClient(dependencyGraph) {
     /**
      * Get Azure DevOps Feature child work items gantt diagram.
      * @param {Date} featureStartDate Azure DevOps Feature's start date.
+     * @returns Mermaid JS gantt diagram showing a breakdown of Azure DevOps Feature child work
+     * items schedule.
      */
     this.getGanttDiagram = function (featureStartDate) {
+        const featureStartId = "featureStart";
+
         let dependencyGraphNodes = dependencyGraph.getNodes();
 
         let ganttDiagram = "gantt\n    dateFormat YYYY-MM-DD\n    excludes weekends\n"
 
         ganttDiagram += "    Section Milestones\n";
 
-        ganttDiagram += `    Feature Start : milestone, featureStart`
+        ganttDiagram += `    Feature Start : milestone, ${featureStartId}`
             + `, ${getDateString(featureStartDate)}, 1${Settings.effortFieldTimeSpan}\n`;
 
         ganttDiagram += "    Section Default\n";
 
+        const resourceScheduler = new ResourceScheduler(Settings.resourceCount, featureStartId);
+
         let scheduledWorkItemIds = [];
 
         while (scheduledWorkItemIds.length < dependencyGraphNodes.length) {
-            let workItemsToBeScheduled = dependencyGraphNodes
-                .filter(node => !scheduledWorkItemIds.includes(node.data.id))
-                .filter(node => node.parentNodeIndices.every(parentNodeIndex =>
-                    scheduledWorkItemIds.includes(dependencyGraphNodes[parentNodeIndex].data.id)
-                ))
-                .map(node => node.data)
-                .sort((workItemA, workItemB) => {
-                    if (workItemA.fields[Settings.priorityField] !== workItemB.fields[Settings.priorityField]) {
-                        return workItemA.fields[Settings.priorityField] - workItemB.fields[Settings.priorityField];
-                    }
+            const availableResources = resourceScheduler.getAvailableResources();
 
-                    return workItemB.fields[Settings.effortField] - workItemA.fields[Settings.effortField];
-                });
+            const workItemsResources =
+                getWorkItemsResources(scheduledWorkItemIds, availableResources);
 
-            workItemsToBeScheduled.forEach(workItemToBeScheduled => {
-                const workItemTitle = workItemToBeScheduled
-                    .fields[Settings.titleField]
-                    .sanitizeMermaidTitle();
-                const workItemEffort = workItemToBeScheduled.fields[Settings.effortField];
+            workItemsResources.forEach(({ workItem, resource }) => {
+                const workItemTitle = workItem.fields[Settings.titleField].sanitizeMermaidTitle();
+                const workItemId = workItem.id;
+                const workItemEffort = workItem.fields[Settings.effortField];
+                const afterWorkItemId = resource.getWorkItemId();
 
-                ganttDiagram += `    ${workItemTitle} : ${workItemEffort}`
-                    + `${Settings.effortFieldTimeSpan}\n`;
+                resource.assignWorkItem(workItemId, workItemEffort);
 
-                scheduledWorkItemIds.push(workItemToBeScheduled.id);
+                ganttDiagram += `        ${workItemTitle} : ${workItemId}, after ${afterWorkItemId}`
+                    + `, ${workItemEffort}${Settings.effortFieldTimeSpan}\n`;
+
+                scheduledWorkItemIds.push(workItem.id);
             });
+
+            resourceScheduler.tick();
         }
 
         return ganttDiagram;
     }
+
+    /**
+     * Get a map between ready Azure DevOps Feature child work items and available resources.
+     * @param {number[]} scheduledWorkItemIds Azure DevOps Feature child work items identifiers
+     * that have already been scheduled.
+     * @param {Object[]} availableResources Collection of available resources.
+     * @returns Map between ready child work items and available resources.
+     */
+    const getWorkItemsResources = (scheduledWorkItemIds, availableResources) => {
+        const dependencyGraphNodes = dependencyGraph.getNodes();
+
+        return dependencyGraphNodes
+            .filter(node => !scheduledWorkItemIds.includes(node.data.id))
+            .filter(node => node.parentNodeIndices.every(parentNodeIndex =>
+                scheduledWorkItemIds.includes(dependencyGraphNodes[parentNodeIndex].data.id)
+            ))
+            .map(node => node.data)
+            .sort((workItemA, workItemB) => {
+                if (workItemA.fields[Settings.priorityField] !== workItemB.fields[Settings.priorityField]) {
+                    return workItemA.fields[Settings.priorityField] - workItemB.fields[Settings.priorityField];
+                }
+
+                return workItemB.fields[Settings.effortField] - workItemA.fields[Settings.effortField];
+            })
+            .slice(0, availableResources.length)
+            .map((workItem, index) => ({ workItem, resource: availableResources[index] }));
+    };
 }
