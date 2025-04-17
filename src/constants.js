@@ -4,6 +4,25 @@
 const Constants = (function () {
     return {
         /**
+         * Collection of Azure DevOps resources and field names.
+         */
+        azure_dev_ops: {
+            /**
+             * Azure DevOps Feature child work item relation type.
+             */
+            FEATURE_CHILD_RELATION: "Child",
+
+            /**
+             * Azure DevOps Feature work item type.
+             */
+            FEATURE_WORK_ITEM_TYPE: "Feature",
+
+            /**
+             * Azure DevOps work item type field name.
+             */
+            WORK_ITEM_TYPE_FIELD: "System.WorkItemType",
+        },
+        /**
          * Collection of local storage keys.
          */
         localStorage: {
