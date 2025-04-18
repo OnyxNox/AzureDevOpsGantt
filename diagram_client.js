@@ -1,8 +1,23 @@
-mermaid.initialize({
+const mermaidRenderOptions = {
     startOnLoad: false,
     theme: "dark",
     flowchart: { useMaxWidth: true },
-    gantt: { useWidth: 1200 },
+    gantt: { useWidth: window.innerWidth },
+};
+
+mermaid.initialize(mermaidRenderOptions);
+
+window.addEventListener("resize", async () => {
+    mermaidRenderOptions.gantt.useWidth = window.innerWidth;
+
+    mermaid.initialize(mermaidRenderOptions);
+
+    if (Settings.selectedDiagramType === DiagramType.Gantt) {
+        const ganttDiagram = localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY);
+
+        document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID)
+            .innerHTML = (await mermaid.render("updatedGraph", ganttDiagram)).svg;
+    }
 });
 
 /**
