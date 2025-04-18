@@ -32,13 +32,6 @@ const Settings = (function () {
 
 window.onload = handleWindowOnLoad;
 
-mermaid.initialize({
-    startOnLoad: false,
-    theme: "dark",
-    flowchart: { useMaxWidth: true },
-    gantt: { useWidth: 1200 },
-});
-
 /**
  * Write setting to local storage and refresh diagram from local storage.
  * @param {string} key Settings field key.
