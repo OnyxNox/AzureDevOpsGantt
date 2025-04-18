@@ -17,7 +17,10 @@ const DiagramType = Object.freeze({
  * Global settings used across the application.
  */
 const Settings = (function () {
-    return {
+    const previousSettings =
+        JSON.parse(localStorage.getItem(Constants.localStorage.SETTINGS_KEY) ?? "{}");
+
+    const defaultSettings = {
         dependencyRelation: "Tests",
         effortField: "Microsoft.VSTS.Scheduling.RemainingWork",
         effortFieldTimeSpan: "d",
@@ -28,6 +31,8 @@ const Settings = (function () {
         titleField: "System.Title",
         selectedDiagramType: DiagramType.Gantt,
     };
+
+    return { ...defaultSettings, ...previousSettings };
 })();
 
 window.onload = handleWindowOnLoad;
@@ -42,7 +47,7 @@ async function cacheSetting(key, value) {
 
     localStorage.setItem(Constants.localStorage.SETTINGS_KEY, JSON.stringify(Settings));
 
-    const selectedDiagram = Settings.diagramType === DiagramType.Gantt
+    const selectedDiagram = Settings.selectedDiagramType === DiagramType.Gantt
         ? localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY)
         : localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
 
@@ -76,23 +81,18 @@ async function handleWindowOnLoad() {
             .checked = true;
     }
 
-    const previousSettings = localStorage.getItem(Constants.localStorage.SETTINGS_KEY);
-    const settings = previousSettings ? JSON.parse(previousSettings) : Settings;
-
     document.getElementById(Constants.userInterface.DEPENDENCY_RELATION_ELEMENT_ID)
-        .value = settings.dependencyRelation;
-    Settings.dependencyRelation = settings.dependencyRelation;
+        .value = Settings.dependencyRelation;
 
     document.getElementById(Constants.userInterface.RESOURCE_COUNT_ELEMENT_ID)
-        .value = settings.resourceCount;
-    Settings.resourceCount = settings.resourceCount;
+        .value = Settings.resourceCount;
 
     document
         .querySelector(
-            `input[type="radio"][name="diagramType"][value=${settings.selectedDiagramType}]`)
+            `input[type="radio"][name="selectedDiagramType"][value=${Settings.selectedDiagramType}]`)
         .checked = true;
 
-    const selectedDiagram = settings.selectedDiagramType == DiagramType.Gantt
+    const selectedDiagram = Settings.selectedDiagramType == DiagramType.Gantt
         ? localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY)
         : localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
 
