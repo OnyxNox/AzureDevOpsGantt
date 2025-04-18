@@ -11,7 +11,7 @@
 <body>
     <div id="loadingOverlay"></div>
     <div id="controlPanel">
-        <input type="checkbox" id="controlPanelToggle" checked />
+        <input type="checkbox" id="controlPanelToggle" />
         <label for="controlPanelToggle" id="controlPanelTab" title="Toggle the control panel">
             Ctrl
         </label>
@@ -58,12 +58,12 @@
     <div id="actionBar">
         <div class="buttonRadioGroup">
             <label>
-                <input type="radio" name="diagramType" value="gantt"
+                <input type="radio" name="selectedDiagramType" value="gantt"
                     onchange="cacheSetting(event.target.name, event.target.value)" />
                 Gantt
             </label>
             <label>
-                <input type="radio" name="diagramType" value="dependency"
+                <input type="radio" name="selectedDiagramType" value="dependency"
                     onchange="cacheSetting(event.target.name, event.target.value)" />
                 Dependency
             </label>
