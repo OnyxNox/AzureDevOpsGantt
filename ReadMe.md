@@ -8,7 +8,6 @@ Navigate to this repository's [GitHub Pages](https://onyxnox.github.io/AzureDevO
 
 ## To Dos
 
-1. [ ] Allow user to provide a number of resources that get parallelized across the feature's child work items in the Gantt diagram.
 1. [ ] Allow user to create resource blockers that identify no progress will be made on assigned work items.
 1. [ ] Allow user to enable an automatic refresh so that the diagram is updated as the Azure DevOps Feature is being updated.
 1. [ ] Fix Gantt diagram's width so it fills the browser window's viewport dynamically; currently it has a static width.

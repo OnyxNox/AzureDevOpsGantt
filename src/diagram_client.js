@@ -1,3 +1,10 @@
+mermaid.initialize({
+    startOnLoad: false,
+    theme: "dark",
+    flowchart: { useMaxWidth: true },
+    gantt: { useWidth: 1200 },
+});
+
 /**
  * Client used to generate Mermaid JS diagrams.
  */
@@ -69,8 +76,9 @@ class DiagramClient {
 
         let lastCompletedWorkItemId = featureStartId;
         while (completedWorkItems.length < this.#dependencyGraphNodes.length) {
-            let readyToScheduleWorkItems =
-                this.#getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems);
+            let readyToScheduleWorkItems = this
+                .#getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems)
+                .slice(0, Settings.resourceCount);
 
             readyToScheduleWorkItems.forEach(workItem => {
                 const workItemSection = workItem
@@ -81,8 +89,6 @@ class DiagramClient {
                     ?? "Default";
                 const workItemTitle = DiagramClient
                     .#sanitizeMermaidTitle(workItem.fields[Settings.titleField]);
-                const isMilestone =
-                    workItemSection === Constants.azure_dev_ops.MILESTONE_SECTION_TAG;
 
                 const sectionGanttLines = ganttLines.get(workItemSection) ?? [];
 
