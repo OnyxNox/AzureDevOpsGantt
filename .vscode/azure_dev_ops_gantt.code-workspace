@@ -12,6 +12,9 @@
         "configurations": []
     },
     "settings": {
+        "cSpell.words": [
+            "gantt"
+        ],
         "editor.formatOnSave": true,
         "editor.rulers": [
             100,

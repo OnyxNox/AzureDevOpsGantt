@@ -1,124 +1,164 @@
 /**
  * Client used to generate Mermaid JS diagrams.
- * @param {Object} dependencyGraph Dependency graph used to describe Azure DevOps Feature child work
- * items dependency structure.
  */
-function DiagramClient(dependencyGraph) {
-    /**
-     * Get Azure DevOps Feature child work items dependency diagram.
-     * @returns Mermaid JS flowchart showing the hierarchy of Azure DevOps Feature child work items.
-     */
-    this.getDependencyDiagram = function () {
-        let dependencyGraphNodes = dependencyGraph.getNodes();
+class DiagramClient {
+    #dependencyGraphNodes = [];
 
+    /**
+     * Initialize a new instance of the {@link DiagramClient}.
+     * @param {Object[]} workItems Azure DevOps work items to be graphed.
+     */
+    constructor(workItems) {
+        workItems.forEach(workItem => {
+            let parentWorkItems = workItem
+                .relations
+                .filter(workItemRelation =>
+                    workItemRelation.attributes.name === Settings.dependencyRelation)
+                .map(dependencyWorkItemRelation =>
+                    ControlPanel.getWorkItemIdFromUrl(dependencyWorkItemRelation.url))
+                .map(dependencyWorkItemId => workItems
+                    .find(workItem => workItem.id === dependencyWorkItemId));
+
+            workItem.fields[Settings.effortField] = workItem.fields[Settings.effortField]
+                ?? Constants.azure_dev_ops.WORK_ITEM_DEFAULT_EFFORT;
+
+            this.#dependencyGraphNodes.push({ workItem, parentWorkItems });
+        });
+    }
+
+    /**
+     * Get Mermaid JS flowchart showing dependencies hierarchy for the Azure DevOps work items.
+     * @returns Mermaid JS flowchart showing a dependency hierarchy diagram.
+     */
+    getDependencyDiagram() {
         let dependencyDiagram = "flowchart TD\n";
 
-        dependencyDiagram += dependencyGraphNodes
+        dependencyDiagram += this.#dependencyGraphNodes
             .map(node => {
-                const workItemTitle = node.data.fields[Settings.titleField].sanitizeMermaidTitle();
+                const workItemTitle = DiagramClient
+                    .#sanitizeMermaidTitle(node.workItem.fields[Settings.titleField]);
 
-                return `    ${node.data.id}[${workItemTitle}]`;
+                return `    ${node.workItem.id}[${workItemTitle}]`;
             })
             .join('\n');
 
-        dependencyDiagram += '\n' + dependencyGraphNodes
-            .flatMap(node => node.parentNodeIndices.map(parentNodeIndex =>
-                `    ${dependencyGraphNodes[parentNodeIndex].data.id} --> ${node.data.id}`
-            ))
+        dependencyDiagram += '\n' + this.#dependencyGraphNodes
+            .flatMap(node => node.parentWorkItems.map(parentWorkItem =>
+                `    ${parentWorkItem.id} --> ${node.workItem.id}`))
             .join('\n');
 
         return dependencyDiagram;
     }
 
     /**
-     * Get Azure DevOps Feature child work items gantt diagram.
-     * @param {Date} featureStartDate Azure DevOps Feature's start date.
-     * @returns Mermaid JS gantt diagram showing a breakdown of Azure DevOps Feature child work
-     * items schedule.
+     * Get Mermaid JS gantt chart showing a schedule for the Azure DevOps work items.
+     * @param {Date} featureStartDate Start date of the Azure DevOps feature.
+     * @returns Mermaid JS gantt chart showing a schedule diagram.
      */
-    this.getGanttDiagram = function (featureStartDate) {
+    getGanttDiagram(featureStartDate) {
         const featureStartId = "featureStart";
 
-        let dependencyGraphNodes = dependencyGraph.getNodes();
+        let completedWorkItems = [];
+        let scheduledWorkItems = [];
+        let ganttLines = new Map();
+
+        ganttLines.set(
+            Constants.azure_dev_ops.MILESTONE_SECTION_TAG,
+            [`Feature Start : milestone, ${featureStartId}`
+                + `, ${DiagramClient.#getDateString(featureStartDate)}, 1d`]);
+
+        let lastCompletedWorkItemId = featureStartId;
+        while (completedWorkItems.length < this.#dependencyGraphNodes.length) {
+            let readyToScheduleWorkItems =
+                this.#getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems);
+
+            readyToScheduleWorkItems.forEach(workItem => {
+                const workItemSection = workItem
+                    .fields[Constants.azure_dev_ops.WORK_ITEM_TAGS_FIELD]
+                    ?.split(';')
+                    .find(tag => tag.startsWith(Settings.sectionTagPrefix))
+                    .replace(Settings.sectionTagPrefix, '')
+                    ?? "Default";
+                const workItemTitle = DiagramClient
+                    .#sanitizeMermaidTitle(workItem.fields[Settings.titleField]);
+                const isMilestone =
+                    workItemSection === Constants.azure_dev_ops.MILESTONE_SECTION_TAG;
+
+                const sectionGanttLines = ganttLines.get(workItemSection) ?? [];
+
+                sectionGanttLines.push(`${workItemTitle} : ${workItem.id}`
+                    + `, after ${lastCompletedWorkItemId}`
+                    + `, ${workItem.fields[Settings.effortField]}${Settings.effortFieldTimeSpan}`);
+
+                ganttLines.set(workItemSection, sectionGanttLines);
+
+                scheduledWorkItems.push(workItem);
+            });
+
+            const leastEffortRemainingScheduledWorkItem = scheduledWorkItems
+                .reduce((leastEffortWorkItem, workItem) => {
+                    return workItem.fields[Settings.effortField] < leastEffortWorkItem.fields[Settings.effortField]
+                        ? workItem : leastEffortWorkItem;
+                }, scheduledWorkItems[0]);
+
+            scheduledWorkItems
+                .forEach(workItem => workItem.fields[Settings.effortField] -= leastEffortRemainingScheduledWorkItem.fields[Settings.effortField]);
+
+            const iterationCompletedWorkItems = scheduledWorkItems.filter(workItem => workItem.fields[Settings.effortField] <= 0);
+            completedWorkItems.push(...iterationCompletedWorkItems);
+
+            scheduledWorkItems = scheduledWorkItems.filter(workItem => workItem.fields[Settings.effortField] > 0);
+
+            lastCompletedWorkItemId = iterationCompletedWorkItems[0].id;
+        }
 
         let ganttDiagram = "gantt\n    dateFormat YYYY-MM-DD\n    excludes weekends\n"
 
-        ganttDiagram += "    Section Milestones\n";
-
-        ganttDiagram += `    Feature Start : milestone, ${featureStartId}`
-            + `, ${getDateString(featureStartDate)}, 1${Settings.effortFieldTimeSpan}\n`;
-
-        ganttDiagram += "    Section Default\n";
-
-        const resourceScheduler = new ResourceScheduler(Settings.resourceCount, featureStartId);
-
-        let scheduledWorkItemIds = [];
-
-        while (scheduledWorkItemIds.length < dependencyGraphNodes.length) {
-            const availableResources = resourceScheduler.getAvailableResources();
-
-            const workItemsResources =
-                getWorkItemsResources(scheduledWorkItemIds, availableResources);
-
-            workItemsResources.forEach(({ workItem, resource }) => {
-                const workItemTitle = workItem.fields[Settings.titleField].sanitizeMermaidTitle();
-                const workItemId = workItem.id;
-                const workItemEffort = workItem.fields[Settings.effortField];
-                const afterWorkItemId = resource.getWorkItemId();
-
-                resource.assignWorkItem(workItemId, workItemEffort);
-
-                ganttDiagram += `        ${workItemTitle} : ${workItemId}, after ${afterWorkItemId}`
-                    + `, ${workItemEffort}${Settings.effortFieldTimeSpan}\n`;
-
-                scheduledWorkItemIds.push(workItem.id);
-            });
-
-            resourceScheduler.tick();
-        }
+        ganttDiagram += Array.from(ganttLines.entries())
+            .flatMap(([key, value]) =>
+                [`    Section ${key}`].concat(value.map(line => `        ${line}`)))
+            .join('\n');
 
         return ganttDiagram;
     }
 
     /**
-     * Get a map between ready Azure DevOps Feature child work items and available resources.
-     * @param {number[]} scheduledWorkItemIds Azure DevOps Feature child work items identifiers
-     * that have already been scheduled.
-     * @param {Object[]} availableResources Collection of available resources.
-     * @returns Map between ready child work items and available resources.
+     * Get date string from a Date in the format of 'YYYY-MM-DD'.
+     * @param {Date} date Input date.
+     * @returns {string} Date string in the format of 'YYYY-MM-DD'.
      */
-    const getWorkItemsResources = (scheduledWorkItemIds, availableResources) => {
-        const dependencyGraphNodes = dependencyGraph.getNodes();
+    static #getDateString(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
 
-        return dependencyGraphNodes
-            .filter(node => !scheduledWorkItemIds.includes(node.data.id))
-            .filter(node => node.parentNodeIndices.every(parentNodeIndex =>
-                scheduledWorkItemIds.includes(dependencyGraphNodes[parentNodeIndex].data.id)
+        return `${year}-${month}-${day}`;
+    }
+
+    #getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems) {
+        return this.#dependencyGraphNodes
+            .filter(node => !(scheduledWorkItems.includes(node.workItem)
+                || completedWorkItems.includes(node.workItem)))
+            .filter(node => node.parentWorkItems.every(parentWorkItem =>
+                completedWorkItems.includes(parentWorkItem)
             ))
-            .map(node => node.data)
+            .map(node => node.workItem)
             .sort((workItemA, workItemB) => {
                 if (workItemA.fields[Settings.priorityField] !== workItemB.fields[Settings.priorityField]) {
                     return workItemA.fields[Settings.priorityField] - workItemB.fields[Settings.priorityField];
                 }
 
                 return workItemB.fields[Settings.effortField] - workItemA.fields[Settings.effortField];
-            })
-            .slice(0, availableResources.length)
-            .map((workItem, index) => ({ workItem, resource: availableResources[index] }));
-    };
+            });
+    }
+
+    /**
+     * Get a valid Mermaid JS diagram node title.
+     * @param {string} title Title to be sanitized.
+     * @returns Valid Mermaid JS diagram node title, where all non-alphanumeric characters are
+     * replaced with their HTML ASCII character codes.
+     */
+    static #sanitizeMermaidTitle(title) {
+        return title.replace(/[^a-zA-Z0-9 ]/g, (char) => `#${char.charCodeAt(0)};`);
+    }
 }
-
-
-
-/**
- * Get date string from a Date in the format of 'YYYY-MM-DD'.
- * @param {Date} date Input date.
- * @returns {string} Date string in the format of 'YYYY-MM-DD'.
- */
-// static #getDateString(date) {
-//     const year = date.getFullYear();
-//     const month = String(date.getMonth() + 1).padStart(2, '0');
-//     const day = String(date.getDate()).padStart(2, '0');
-
-//     return `${year}-${month}-${day}`;
-// }

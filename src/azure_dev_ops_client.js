@@ -1,32 +1,50 @@
 /**
  * HTTP client used to interface with Azure DevOps APIs.
- * @param {string} userEmail Azure DevOps user's email address used to authenticate requests.
- * @param {string} personalAccessToken Personal access token used to authenticate requests.
- * @param {string} organizationName Azure DevOps organization that work items are under.
- * @param {string} projectName Azure DevOps organization's project that work items are under.
  */
-function AzureDevOpsClient(userEmail, personalAccessToken, organizationName, projectName) {
-    const AZURE_DEV_OPS_DOMAIN = "https://dev.azure.com";
-    const QUERY_PARAMETERS = "api-version=7.1&$expand=relations";
-    const REQUEST_HEADERS = {
-        "Accept": "application/json",
-        "Authorization": `Basic ${btoa(`${userEmail}:${personalAccessToken}`)}`,
-    };
+class AzureDevOpsClient {
+    static #DOMAIN = "https://dev.azure.com";
+    static #QUERY_PARAMETERS = "api-version=7.1&$expand=relations";
+
+    #organizationName;
+    #projectName;
+    #requestHeaders;
 
     /**
-     * Get work item by its identifier.
+     * Initialize a new instance of the {@link AzureDevOpsClient}.
+     * @param {string} userEmail Azure DevOps user email address used to authenticate requests.
+     * @param {string} personalAccessToken Personal access token used to authenticate requests.
+     * @param {string} organizationName Azure DevOps organization that work items are under.
+     * @param {string} projectName Azure DevOps organization's project that work items are under.
+     */
+    constructor(userEmail, personalAccessToken, organizationName, projectName) {
+        this.#requestHeaders = {
+            "Accept": "application/json",
+            "Authorization": `Basic ${btoa(`${userEmail}:${personalAccessToken}`)}`,
+        };
+
+        this.#organizationName = organizationName;
+        this.#projectName = projectName;
+    }
+
+    /**
+     * Get a work item by its identifier.
      * @param {number | string} workItemId Work item identifier.
+     * @returns {Object} Azure DevOps work item.
      */
-    this.getWorkItem = async (workItemId) => (await this.getWorkItems([workItemId])).value[0];
+    async getWorkItem(workItemId) {
+        return (await this.getWorkItems([workItemId])).value[0];
+    }
 
     /**
-     * Get work items by their identifiers.
+     * Get a collection of work items by their identifiers.
      * @param {number[] | string[]} workItemIds Collection of work item identifiers.
+     * @returns {Object[]} Azure DevOps work items.
      */
-    this.getWorkItems = async function (workItemIds) {
-        const workItemsUrl = `${AZURE_DEV_OPS_DOMAIN}/${organizationName}/${projectName}/_apis/wit`
-            + `/workitems?ids=${workItemIds.join(',')}&${QUERY_PARAMETERS}`;
+    async getWorkItems(workItemIds) {
+        const workItemsUrl = `${AzureDevOpsClient.#DOMAIN}/${this.#organizationName}/`
+            + `${this.#projectName}/_apis/wit/workitems?ids=${workItemIds.join(',')}`
+            + `&${AzureDevOpsClient.#QUERY_PARAMETERS}`
 
-        return await (await fetch(workItemsUrl, { headers: REQUEST_HEADERS })).json();
+        return await (await fetch(workItemsUrl, { headers: this.#requestHeaders })).json();
     }
 }

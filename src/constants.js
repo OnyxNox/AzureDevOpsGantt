@@ -18,6 +18,21 @@ const Constants = (function () {
             FEATURE_WORK_ITEM_TYPE: "Feature",
 
             /**
+             * Azure DevOps work item tag that identifies a milestone.
+             */
+            MILESTONE_SECTION_TAG: "Milestone",
+
+            /**
+             * Azure DevOps work item default effort, measured in days.
+             */
+            WORK_ITEM_DEFAULT_EFFORT: 3,
+
+            /**
+             * Azure DevOps work item tags field name.
+             */
+            WORK_ITEM_TAGS_FIELD: "System.Tags",
+
+            /**
              * Azure DevOps work item type field name.
              */
             WORK_ITEM_TYPE_FIELD: "System.WorkItemType",
