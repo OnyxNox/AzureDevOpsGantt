@@ -15,10 +15,8 @@ class ControlPanel {
         const featureWorkItems = await ControlPanel.#getFeatureWorkItemsAsync(event.target);
         const featureWorkItem = featureWorkItems.find(ControlPanel.#isFeatureWorkItem);
 
-        const dependencyGraph = ControlPanel.#getDependencyGraph(featureWorkItems.filter(
+        const diagramClient = new DiagramClient(featureWorkItems.filter(
             featureWorkItem => !ControlPanel.#isFeatureWorkItem(featureWorkItem)));
-
-        const diagramClient = new DiagramClient(dependencyGraph);
 
         let dependencyDiagram = diagramClient.getDependencyDiagram();
 
@@ -42,32 +40,6 @@ class ControlPanel {
     }
 
     /**
-     * Get a dependency graph used to describe a hierarchy among the Azure DevOps work items.
-     * @param {[]} childWorkItems Azure DevOps work items to be mapped.
-     * @returns {Object} A dependency graph.
-     */
-    static #getDependencyGraph(childWorkItems) {
-        const dependencyGraph = new DependencyGraph();
-
-        childWorkItems.forEach((childWorkItem, childWorkItemIndex) => {
-            dependencyGraph.addNode(childWorkItem);
-
-            childWorkItem
-                .relations
-                .filter(childWorkItemRelation =>
-                    childWorkItemRelation.attributes.name == Settings.dependencyRelation)
-                .map(dependencyWorkItemRelation =>
-                    ControlPanel.#getWorkItemIdFromUrl(dependencyWorkItemRelation.url))
-                .map(dependencyWorkItemId =>
-                    childWorkItems.findIndex(childWorkItem => childWorkItem.id == dependencyWorkItemId))
-                .forEach(dependencyWorkItemIndex =>
-                    dependencyGraph.addEdge(childWorkItemIndex, dependencyWorkItemIndex));
-        });
-
-        return dependencyGraph;
-    }
-
-    /**
      * Get collection of Azure DevOps feature work items, including the feature work item.
      * @param {HTMLFormElement} htmlFormElement Control panel's HTML form element containing context
      * details.
@@ -79,6 +51,7 @@ class ControlPanel {
             featureWorkItemId:
                 formData.get(Constants.userInterface.FEATURE_WORK_ITEM_ID_ELEMENT_ID),
             organizationName: formData.get(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID),
+            personAccessToken: formData.get(Constants.userInterface.PERSON_ACCESS_TOKEN_ELEMENT_ID),
             projectName: formData.get(Constants.userInterface.PROJECT_NAME_ELEMENT_ID),
             userEmail: formData.get(Constants.userInterface.USER_EMAIL_ELEMENT_ID),
         };
@@ -87,7 +60,7 @@ class ControlPanel {
 
         const azureDevOpsClient = new AzureDevOpsClient(
             context.userEmail,
-            formData.get(Constants.userInterface.PERSON_ACCESS_TOKEN_ELEMENT_ID),
+            context.personAccessToken,
             context.organizationName,
             context.projectName,
         );
@@ -98,7 +71,7 @@ class ControlPanel {
             .relations
             .filter(workItemRelation =>
                 workItemRelation.attributes.name === Constants.azure_dev_ops.FEATURE_CHILD_RELATION)
-            .map(childWorkItem => ControlPanel.#getWorkItemIdFromUrl(childWorkItem.url));
+            .map(childWorkItem => ControlPanel.getWorkItemIdFromUrl(childWorkItem.url));
 
         featureWorkItems.push(...(await azureDevOpsClient.getWorkItems(childWorkItemIds)).value);
 
@@ -110,7 +83,7 @@ class ControlPanel {
      * @param {string} workItemUrl Direct work item URL.
      * @returns {number} Work item identifier.
      */
-    static #getWorkItemIdFromUrl(workItemUrl) {
+    static getWorkItemIdFromUrl(workItemUrl) {
         return parseInt(workItemUrl.substring(workItemUrl.lastIndexOf('/') + 1), 10);
     }
 
