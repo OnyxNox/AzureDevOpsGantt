@@ -8,6 +8,7 @@ const mermaidRenderOptions = {
 mermaid.initialize(mermaidRenderOptions);
 
 window.addEventListener("resize", async () => {
+    // `useMaxWidth` is a base diagram option but it doesn't work on the gantt diagram type.
     mermaidRenderOptions.gantt.useWidth = window.innerWidth;
 
     mermaid.initialize(mermaidRenderOptions);
@@ -91,9 +92,11 @@ class DiagramClient {
 
         let lastCompletedWorkItemId = featureStartId;
         while (completedWorkItems.length < this.#dependencyGraphNodes.length) {
+            const availableResourceCount = Settings.resourceCount - scheduledWorkItems.length;
+
             let readyToScheduleWorkItems = this
                 .#getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems)
-                .slice(0, Settings.resourceCount);
+                .slice(0, availableResourceCount);
 
             readyToScheduleWorkItems.forEach(workItem => {
                 const workItemSection = workItem
@@ -116,19 +119,19 @@ class DiagramClient {
                 scheduledWorkItems.push(workItem);
             });
 
-            const leastEffortRemainingScheduledWorkItem = scheduledWorkItems
-                .reduce((leastEffortWorkItem, workItem) => {
-                    return workItem.fields[Settings.effortField] < leastEffortWorkItem.fields[Settings.effortField]
-                        ? workItem : leastEffortWorkItem;
-                }, scheduledWorkItems[0]);
+            const leastScheduledEffortRemaining = Math.min(
+                ...scheduledWorkItems.map(workItem => workItem.fields[Settings.effortField]));
 
-            scheduledWorkItems
-                .forEach(workItem => workItem.fields[Settings.effortField] -= leastEffortRemainingScheduledWorkItem.fields[Settings.effortField]);
+            scheduledWorkItems.forEach(workItem =>
+                workItem.fields[Settings.effortField] -= leastScheduledEffortRemaining);
 
-            const iterationCompletedWorkItems = scheduledWorkItems.filter(workItem => workItem.fields[Settings.effortField] <= 0);
+            const iterationCompletedWorkItems = scheduledWorkItems
+                .filter(workItem => workItem.fields[Settings.effortField] <= 0);
+
             completedWorkItems.push(...iterationCompletedWorkItems);
 
-            scheduledWorkItems = scheduledWorkItems.filter(workItem => workItem.fields[Settings.effortField] > 0);
+            scheduledWorkItems = scheduledWorkItems
+                .filter(workItem => workItem.fields[Settings.effortField] > 0);
 
             lastCompletedWorkItemId = iterationCompletedWorkItems[0].id;
         }
@@ -156,6 +159,15 @@ class DiagramClient {
         return `${year}-${month}-${day}`;
     }
 
+    /**
+     * Get collection of Azure DevOps work items that are ready to be scheduled. Work items are
+     * ordered by priority ascending (1..n) then effort descending (n..1).
+     * @param {Object[]} scheduledWorkItems Azure DevOps work items that have already been
+     * scheduled.
+     * @param {Object[]} completedWorkItems Azure DevOps work items that have already been scheduled
+     * then completed by a resource.
+     * @returns Collection of Azure DevOps work items that are ready to be scheduled.
+     */
     #getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems) {
         return this.#dependencyGraphNodes
             .filter(node => !(scheduledWorkItems.includes(node.workItem)
