@@ -20,8 +20,8 @@ class ControlPanel {
 
         let dependencyDiagram = diagramClient.getDependencyDiagram();
 
-        const ganttDiagram = diagramClient.getGanttDiagram(
-            new Date(featureWorkItem.fields[Settings.featureStartDateField]));
+        const ganttDiagram = diagramClient.getGanttDiagram(new Date(
+            featureWorkItem.fields[Constants.azure_dev_ops.FEATURE_WORK_ITEM_START_DATE_FIELD]));
 
         localStorage.setItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY, dependencyDiagram);
         localStorage.setItem(Constants.localStorage.GANTT_DIAGRAM_KEY, ganttDiagram);
@@ -51,7 +51,8 @@ class ControlPanel {
             featureWorkItemId:
                 formData.get(Constants.userInterface.FEATURE_WORK_ITEM_ID_ELEMENT_ID),
             organizationName: formData.get(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID),
-            personAccessToken: formData.get(Constants.userInterface.PERSON_ACCESS_TOKEN_ELEMENT_ID),
+            personalAccessToken:
+                formData.get(Constants.userInterface.PERSONAL_ACCESS_TOKEN_ELEMENT_ID),
             projectName: formData.get(Constants.userInterface.PROJECT_NAME_ELEMENT_ID),
             userEmail: formData.get(Constants.userInterface.USER_EMAIL_ELEMENT_ID),
         };
@@ -60,7 +61,7 @@ class ControlPanel {
 
         const azureDevOpsClient = new AzureDevOpsClient(
             context.userEmail,
-            context.personAccessToken,
+            context.personalAccessToken,
             context.organizationName,
             context.projectName,
         );

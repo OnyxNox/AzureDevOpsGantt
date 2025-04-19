@@ -13,6 +13,13 @@ const DiagramType = Object.freeze({
     Gantt: "gantt",
 });
 
+const EffortUnits = Object.freeze({
+    Days: 'd',
+    Hours: 'h',
+    Minutes: 'm',
+    Weeks: 'w',
+});
+
 /**
  * Global settings used across the application.
  */
@@ -24,11 +31,9 @@ const Settings = (function () {
         dependencyRelation: "Tests",
         effortField: "Microsoft.VSTS.Scheduling.RemainingWork",
         effortFieldTimeSpan: "d",
-        featureStartDateField: "Microsoft.VSTS.Scheduling.StartDate",
         priorityField: "Microsoft.VSTS.Common.Priority",
         resourceCount: 1,
         sectionTagPrefix: "Section:",
-        titleField: "System.Title",
         selectedDiagramType: DiagramType.Gantt,
     };
 
@@ -70,34 +75,37 @@ async function handleWindowOnLoad() {
             .value = context.featureWorkItemId ?? "";
         document.getElementById(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID)
             .value = context.organizationName ?? "";
+        document.getElementById(Constants.userInterface.PERSONAL_ACCESS_TOKEN_ELEMENT_ID)
+            .value = context.personalAccessToken ?? "";
         document.getElementById(Constants.userInterface.PROJECT_NAME_ELEMENT_ID)
             .value = context.projectName ?? "";
         document.getElementById(Constants.userInterface.USER_EMAIL_ELEMENT_ID)
             .value = context.userEmail ?? "";
-        document.getElementById(Constants.userInterface.PERSON_ACCESS_TOKEN_ELEMENT_ID)
-            .value = context.personAccessToken ?? "";
     } else {
         document.getElementById(Constants.userInterface.CONTROL_PANEL_TOGGLE_ELEMENT_ID)
             .checked = true;
     }
 
-    document.getElementById(Constants.userInterface.DEPENDENCY_RELATION_ELEMENT_ID)
-        .value = Settings.dependencyRelation;
-
-    document.getElementById(Constants.userInterface.RESOURCE_COUNT_ELEMENT_ID)
-        .value = Settings.resourceCount;
+    [
+        [Constants.userInterface.DEPENDENCY_RELATION_ELEMENT_ID, Settings.dependencyRelation],
+        [Constants.userInterface.EFFORT_FIELD_ELEMENT_ID, Settings.effortField],
+        [Constants.userInterface.EFFORT_MEASUREMENT_ELEMENT_ID, Settings.effortFieldTimeSpan],
+        [Constants.userInterface.PRIORITY_FIELD_ELEMENT_ID, Settings.priorityField],
+        [Constants.userInterface.RESOURCE_COUNT_ELEMENT_ID, Settings.resourceCount],
+        [Constants.userInterface.SECTION_TAG_PREFIX_ELEMENT_ID, Settings.sectionTagPrefix],
+    ].forEach(([elementId, value]) => document.getElementById(elementId).value = value);
 
     document
-        .querySelector(
-            `input[type="radio"][name="selectedDiagramType"][value=${Settings.selectedDiagramType}]`)
+        .querySelector(`input[type="radio"][name="selectedDiagramType"]`
+            + `[value=${Settings.selectedDiagramType}]`)
         .checked = true;
 
-    const selectedDiagram = Settings.selectedDiagramType == DiagramType.Gantt
+    const previousSelectedDiagram = Settings.selectedDiagramType == DiagramType.Gantt
         ? localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY)
         : localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
 
-    if (selectedDiagram) {
+    if (previousSelectedDiagram) {
         document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID)
-            .innerHTML = (await mermaid.render("updatedGraph", selectedDiagram)).svg;
+            .innerHTML = (await mermaid.render("updatedGraph", previousSelectedDiagram)).svg;
     }
 }

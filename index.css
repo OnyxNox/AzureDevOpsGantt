@@ -1,34 +1,42 @@
 :root {
-    --color-secondary: rgb(47, 47, 47);
+    /* Control Panel Variables */
     --control-panel-background-color: rgb(23, 23, 23);
     --control-panel-border-color: rgb(43, 43, 43);
-    --control-panel-border-radius: 8px;
     --control-panel-border-width: 1px;
+    --control-panel-control-margin-bottom: 12px;
     --control-panel-padding: 11px;
-    --control-panel-width: 430px;
+    --control-panel-width: 325px;
     --control-panel-z-index: 100;
-    --page-background-color: rgb(31, 31, 31);
-    --panel-control-padding-x: 13px;
-    --panel-control-padding-y: 6px;
-    --panel-drop-shadow-x: 5px;
-    --panel-drop-shadow: drop-shadow(var(--panel-drop-shadow-x) 7px var(--panel-drop-shadow-x) rgba(0, 0, 0, 0.65));
-    --panel-transition-length: 0.23s;
 
     /* Controls Variables */
-    --control-active-color: rgb(23, 23, 23);
     --control-background-color: rgb(47, 47, 47);
     --control-border-color: rgb(76, 76, 76);
     --control-border-radius: 7px;
     --control-border-width: 2px;
+    --control-padding-x: 13px;
+    --control-padding-y: 6px;
+
+    /* Hamburger Variables */
+    --hamburger-padding: 17px;
+    --hamburger-patty-height: 4px;
+    --hamburger-width: 28px;
 
     /* Page Variables */
     --color-primary: rgb(103, 84, 127);
+    --color-error: rgb(209, 114, 112);
+    --color-secondary: rgb(47, 47, 47);
+    --color-warning: rgb(235, 170, 140);
+    --page-background-color: rgb(31, 31, 31);
     --page-color: rgb(227, 227, 227);
     --page-margin-top: 10px;
 }
 
-* {
+*,
+*:before,
+*:after {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 html,
@@ -39,12 +47,9 @@ body {
     display: flex;
     flex: 1;
     flex-direction: column;
-    font-family: Arial, sans-serif;
-    font-size: 1.1rem;
+    font-family: "trebuchet ms", verdana, arial, sans-serif;
     height: 100%;
     justify-content: center;
-    margin: 0;
-    padding: 0;
     width: 100%;
 }
 
@@ -55,7 +60,7 @@ body {
 
 .buttonRadioGroup>label {
     background-color: var(--control-background-color);
-    border: var(--control-border-width) solid var(--control-border-color);
+    border: var(--control-panel-border-width) solid var(--control-border-color);
     cursor: pointer;
     padding: 8px 13px;
 }
@@ -71,7 +76,6 @@ body {
 .buttonRadioGroup>label:has(input[type="radio"]:checked) {
     background-color: var(--color-primary);
     border: var(--control-border-width) solid var(--color-primary);
-    color: var(--control-active-color);
 }
 
 .buttonRadioGroup>label>input[type="radio"] {
@@ -82,120 +86,8 @@ body {
     margin-top: var(--page-margin-top);
 }
 
-#controlPanel {
-    left: 0;
-    margin-top: var(--page-margin-top);
-    opacity: 0.65;
-    position: fixed;
-    top: 0;
-    z-index: calc(var(--control-panel-z-index) - 1);
-}
-
-#controlPanel:hover {
-    opacity: 0.85;
-}
-
-#controlPanel:has(#controlPanelToggle:checked) {
-    opacity: 1.0;
-}
-
-#controlPanelContent {
-    background-color: var(--control-panel-background-color);
-    border: var(--control-panel-border-width) solid var(--control-panel-border-color);
-    border-left-width: 0;
-    border-bottom-right-radius: var(--control-panel-border-radius);
-    filter: var(--panel-drop-shadow);
-    left: calc((var(--control-panel-width) * -1) - var(--panel-drop-shadow-x));
-    padding: var(--control-panel-padding);
-    position: fixed;
-    transition: left var(--panel-transition-length);
-    width: var(--control-panel-width);
-}
-
-#controlPanelContent h1 {
-    color: var(--color-primary);
-    filter: drop-shadow(3px 3px 0 black);
-    margin-top: 0;
-}
-
-#controlPanelContent form {
-    display: flex;
-    flex-direction: column;
-}
-
-#controlPanelContent .formControl {
-    align-items: center;
-    display: flex;
-    margin-bottom: 12px;
-}
-
-#controlPanelContent .formControl label {
-    flex: 1;
-    font-weight: bold;
-}
-
-#controlPanelContent input {
-    background-color: rgb(51, 51, 51);
-    border: 1px solid rgb(51, 51, 51);
-    border-radius: 4px;
-    color: var(--page-color);
-    outline: none;
-    padding: var(--panel-control-padding-y) var(--panel-control-padding-x);
-    width: 210px;
-}
-
-#controlPanelContent input:focus {
-    border: 1px solid var(--color-primary);
-}
-
-#controlPanelContent button[type="submit"] {
-    align-self: flex-end;
-    background-color: var(--color-primary);
-    border-radius: 4px;
-    border: 0;
-    color: var(--page-color);
-    cursor: pointer;
-    font-size: 1.1rem;
-    font-variant: small-caps;
-    padding: var(--panel-control-padding-y) var(--panel-control-padding-x);
-}
-
-#controlPanelContent button[type="submit"]:hover {
-    filter: brightness(90%);
-}
-
-#controlPanelTab {
-    background-color: var(--control-panel-background-color);
-    border: var(--control-panel-border-width) solid var(--control-panel-border-color);
-    border-left-width: 0;
-    border-radius: 0 var(--control-panel-border-radius) var(--control-panel-border-radius) 0;
-    cursor: pointer;
-    filter: var(--panel-drop-shadow);
-    font-size: 1.3rem;
-    font-variant: small-caps;
-    padding: var(--panel-control-padding-y) var(--panel-control-padding-x);
-    padding-left: calc(var(--panel-control-padding-x) + var(--control-panel-border-width));
-    position: fixed;
-    left: calc((var(--panel-drop-shadow-x) * -1));
-    transition: left var(--panel-transition-length);
-    z-index: var(--control-panel-z-index);
-}
-
-#controlPanelToggle {
-    display: none;
-}
-
-#controlPanelToggle:checked+#controlPanelTab {
-    left: calc(var(--control-panel-width) - var(--control-panel-border-width));
-    color: var(--color-primary);
-}
-
-#controlPanelToggle:checked+#controlPanelTab+#controlPanelContent {
-    left: 0;
-}
-
 #loadingOverlay {
-    background-color: rgba(0, 0, 0, 0.65);
+    background-color: rgba(0, 0, 0, 0.47);
     display: none;
     height: 100%;
     left: 0;

@@ -1,0 +1,147 @@
+#controlPanelContent {
+    background-color: var(--control-panel-background-color);
+    border: var(--control-panel-border-width) solid var(--control-panel-border-color);
+    border-left-width: 0;
+    height: 100%;
+    left: -100%;
+    overflow-y: auto;
+    padding: var(--control-panel-padding);
+    position: fixed;
+    transition: all 0.1s 0.2s ease;
+    width: var(--control-panel-width);
+}
+
+#controlPanelToggle:checked~#controlPanelContent {
+    left: 0;
+}
+
+#controlPanelContent h1 {
+    margin-bottom: 9px;
+}
+
+#controlPanelContent h2 {
+    border-bottom: 1px solid var(--page-color);
+    margin-bottom: var(--control-panel-control-margin-bottom);
+}
+
+#controlPanelContent form {
+    display: flex;
+    flex-direction: column;
+    font-variant: small-caps;
+}
+
+#controlPanelContent .formControl {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: var(--control-panel-control-margin-bottom);
+}
+
+#controlPanelContent .formControl label {
+    margin-bottom: calc(var(--control-panel-control-margin-bottom) / 2);
+}
+
+#controlPanelContent input {
+    background-color: rgb(51, 51, 51);
+    border: 1px solid rgb(51, 51, 51);
+    border-radius: var(--control-border-radius);
+    color: var(--page-color);
+    outline: none;
+    padding: var(--control-padding-y) var(--control-padding-x);
+    width: 100%;
+}
+
+#controlPanelContent input:focus {
+    border: 1px solid var(--color-primary);
+}
+
+#controlPanelContent button[type="submit"] {
+    background-color: var(--color-primary);
+    border-radius: var(--control-border-radius);
+    border: 0;
+    color: var(--page-color);
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-variant: small-caps;
+    padding: var(--control-padding-y) var(--control-padding-x);
+}
+
+#controlPanelContent button[type="submit"]:hover {
+    filter: brightness(90%);
+}
+
+#controlPanelToggle {
+    display: none;
+}
+
+#controlPanelToggleLabel {
+    cursor: pointer;
+    display: block;
+    padding: var(--page-margin-top) var(--hamburger-padding);
+    position: absolute;
+    left: calc(var(--control-panel-width) - var(--hamburger-width) - (var(--hamburger-padding) * 2) - var(--control-panel-border-width));
+    top: 0;
+    transition: all 0.1s 0.2s ease;
+    z-index: calc(var(--control-panel-z-index) + 1);
+}
+
+#controlPanelToggle:not(:checked)+#controlPanelToggleLabel {
+    left: 0;
+}
+
+#hamburgerWrapper {
+    cursor: pointer;
+    display: inline-block;
+    height: 26px;
+    transition: all 0.3s ease;
+}
+
+#hamburger {
+    background: var(--page-color);
+    display: inline-block;
+    height: var(--hamburger-patty-height);
+    position: relative;
+    top: 7px;
+    width: var(--hamburger-width);
+}
+
+#hamburger:before,
+#hamburger:after {
+    background: var(--page-color);
+    content: "";
+    display: block;
+    height: var(--hamburger-patty-height);
+    position: absolute;
+    transition: all 0.1s 0.2s ease, transform 0.2s ease;
+    transform-origin: 50% 50%;
+    width: var(--hamburger-width);
+}
+
+#hamburger:before {
+    top: 8px;
+}
+
+#hamburger:after {
+    top: -8px;
+}
+
+#controlPanelToggle:checked+#controlPanelToggleLabel #hamburger {
+    background: transparent !important;
+    transition: all 0.1s 0s ease;
+    z-index: calc(var(--control-panel-z-index) + 1);
+}
+
+#controlPanelToggle:checked+#controlPanelToggleLabel #hamburger::before,
+#controlPanelToggle:checked+#controlPanelToggleLabel #hamburger::after {
+    background: var(--color-error);
+    top: 0;
+    transition: all 0.1s ease, background-color 0.1s 0.2s ease, transform 0.1s 0.2s ease;
+    width: var(--hamburger-width);
+}
+
+#controlPanelToggle:checked+#controlPanelToggleLabel #hamburger::before {
+    transform: rotate3d(0, 0, 1, 45deg);
+}
+
+#controlPanelToggle:checked+#controlPanelToggleLabel #hamburger::after {
+    transform: rotate3d(0, 0, 1, -45deg);
+}
