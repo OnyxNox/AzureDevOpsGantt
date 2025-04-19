@@ -2,7 +2,16 @@ const mermaidRenderOptions = {
     startOnLoad: false,
     theme: "dark",
     flowchart: { useMaxWidth: true },
-    gantt: { useWidth: window.innerWidth },
+    gantt: {
+        barGap: 6,
+        barHeight: 28,
+        fontSize: 14,
+        leftPadding: 128,
+        rightPadding: 0,
+        sectionFontSize: 16,
+        useWidth: window.innerWidth,
+        // displayMode: 'compact',
+    },
 };
 
 mermaid.initialize(mermaidRenderOptions);
@@ -58,8 +67,8 @@ class DiagramClient {
 
         dependencyDiagram += this.#dependencyGraphNodes
             .map(node => {
-                const workItemTitle = DiagramClient
-                    .#sanitizeMermaidTitle(node.workItem.fields[Settings.titleField]);
+                const workItemTitle = DiagramClient.#sanitizeMermaidTitle(
+                    node.workItem.fields[Constants.azure_dev_ops.WORK_ITEM_TITLE_FIELD]);
 
                 return `    ${node.workItem.id}[${workItemTitle}]`;
             })
@@ -79,6 +88,7 @@ class DiagramClient {
      * @returns Mermaid JS gantt chart showing a schedule diagram.
      */
     getGanttDiagram(featureStartDate) {
+        const defaultWorkItemSection = "Default";
         const featureStartId = "featureStart";
 
         let completedWorkItems = [];
@@ -88,7 +98,7 @@ class DiagramClient {
         ganttLines.set(
             Constants.azure_dev_ops.MILESTONE_SECTION_TAG,
             [`Feature Start : milestone, ${featureStartId}`
-                + `, ${DiagramClient.#getDateString(featureStartDate)}, 1d`]);
+                + `, ${DiagramClient.#getDateString(new Date(featureStartDate))}, 1d`]);
 
         let lastCompletedWorkItemId = featureStartId;
         while (completedWorkItems.length < this.#dependencyGraphNodes.length) {
@@ -99,14 +109,14 @@ class DiagramClient {
                 .slice(0, availableResourceCount);
 
             readyToScheduleWorkItems.forEach(workItem => {
-                const workItemSection = workItem
+                const workItemSection = DiagramClient.#sanitizeMermaidTitle(workItem
                     .fields[Constants.azure_dev_ops.WORK_ITEM_TAGS_FIELD]
                     ?.split(';')
                     .find(tag => tag.startsWith(Settings.sectionTagPrefix))
                     .replace(Settings.sectionTagPrefix, '')
-                    ?? "Default";
-                const workItemTitle = DiagramClient
-                    .#sanitizeMermaidTitle(workItem.fields[Settings.titleField]);
+                    ?? defaultWorkItemSection);
+                const workItemTitle = DiagramClient.#sanitizeMermaidTitle(
+                    workItem.fields[Constants.azure_dev_ops.WORK_ITEM_TITLE_FIELD]);
 
                 const sectionGanttLines = ganttLines.get(workItemSection) ?? [];
 
@@ -136,9 +146,20 @@ class DiagramClient {
             lastCompletedWorkItemId = iterationCompletedWorkItems[0].id;
         }
 
-        let ganttDiagram = "gantt\n    dateFormat YYYY-MM-DD\n    excludes weekends\n"
+        let ganttDiagram =
+            "gantt\n    dateFormat YYYY-MM-DD\n    excludes weekends\n    todayMarker off\n";
 
         ganttDiagram += Array.from(ganttLines.entries())
+            .sort(([sectionTitleA, _sectionLinesA], [sectionTitleB, _sectionLinesB]) => {
+                if (sectionTitleA === Constants.azure_dev_ops.MILESTONE_SECTION_TAG) return -1;
+                if (sectionTitleB === Constants.azure_dev_ops.MILESTONE_SECTION_TAG) return 1;
+
+                if (sectionTitleA === defaultWorkItemSection) return 1;
+                if (sectionTitleB === defaultWorkItemSection) return -1;
+
+                return sectionTitleA
+                    .localeCompare(sectionTitleB, undefined, { sensitivity: "base" });
+            })
             .flatMap(([key, value]) =>
                 [`    Section ${key}`].concat(value.map(line => `        ${line}`)))
             .join('\n');

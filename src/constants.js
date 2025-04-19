@@ -13,6 +13,11 @@ const Constants = (function () {
             FEATURE_CHILD_RELATION: "Child",
 
             /**
+             * Azure DevOps Feature work item start date field name.
+             */
+            FEATURE_WORK_ITEM_START_DATE_FIELD: "Microsoft.VSTS.Scheduling.StartDate",
+
+            /**
              * Azure DevOps Feature work item type.
              */
             FEATURE_WORK_ITEM_TYPE: "Feature",
@@ -31,6 +36,11 @@ const Constants = (function () {
              * Azure DevOps work item tags field name.
              */
             WORK_ITEM_TAGS_FIELD: "System.Tags",
+
+            /**
+             * Azure DevOps work item title field name.
+             */
+            WORK_ITEM_TITLE_FIELD: "System.Title",
 
             /**
              * Azure DevOps work item type field name.
@@ -77,6 +87,16 @@ const Constants = (function () {
             DEPENDENCY_RELATION_ELEMENT_ID: "dependencyRelation",
 
             /**
+             * Effort field input HTML element identifier.
+             */
+            EFFORT_FIELD_ELEMENT_ID: "effortField",
+
+            /**
+             * Effort measurement input HTML element identifier.
+             */
+            EFFORT_MEASUREMENT_ELEMENT_ID: "effortMeasurement",
+
+            /**
              * Feature work item identifier input HTML element identifier.
              */
             FEATURE_WORK_ITEM_ID_ELEMENT_ID: "featureWorkItemId",
@@ -97,9 +117,14 @@ const Constants = (function () {
             ORGANIZATION_NAME_ELEMENT_ID: "organizationName",
 
             /**
-             * Person access token input HTML element identifier.
+             * Personal access token input HTML element identifier.
              */
-            PERSON_ACCESS_TOKEN_ELEMENT_ID: "personalAccessToken",
+            PERSONAL_ACCESS_TOKEN_ELEMENT_ID: "personalAccessToken",
+
+            /**
+             * Priority field input HTML element identifier.
+             */
+            PRIORITY_FIELD_ELEMENT_ID: "priorityField",
 
             /**
              * Project name input HTML element identifier.
@@ -110,6 +135,11 @@ const Constants = (function () {
              * Resource count input HTML element identifier.
              */
             RESOURCE_COUNT_ELEMENT_ID: "resourceCount",
+
+            /**
+             * Section tag prefix input HTML element identifier.
+             */
+            SECTION_TAG_PREFIX_ELEMENT_ID: "sectionTagPrefix",
 
             /**
              * User email input HTML element identifier.

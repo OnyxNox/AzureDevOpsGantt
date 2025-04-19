@@ -6,14 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Azure DevOps Gantt (A-DOG)</title>
     <link href="./index.css" rel="stylesheet" />
+    <link href="./control_panel.css" rel="stylesheet" />
+    <link href="./gantt.css" rel="stylesheet" />
 </head>
 
 <body>
-    <div id="loadingOverlay"></div>
     <div id="controlPanel">
         <input type="checkbox" id="controlPanelToggle" />
-        <label for="controlPanelToggle" id="controlPanelTab" title="Toggle the control panel">
-            Ctrl
+        <label for="controlPanelToggle" id="controlPanelToggleLabel">
+            <div id="hamburgerWrapper">
+                <div id="hamburger"></div>
+            </div>
         </label>
 
         <div id="controlPanelContent">
@@ -42,35 +45,54 @@
                 </div>
                 <h2>Settings</h2>
                 <div class="formControl">
-                    <label for="dependencyRelation">Dependency Relation</label>
-                    <input type="text" id="dependencyRelation" name="dependencyRelation" required />
-                </div>
-                <div class="formControl">
                     <label for="resourceCount">Resource Count</label>
                     <input type="number" id="resourceCount" name="resourceCount" min="1" max="100"
                         onchange="cacheSetting(event.target.name, parseInt(event.target.value, 10))" required />
                 </div>
+                <div class="formControl">
+                    <label for="dependencyRelation">Dependency Relation</label>
+                    <input type="text" id="dependencyRelation" name="dependencyRelation" required />
+                </div>
+                <div class="formControl">
+                    <label for="sectionTagPrefix">Section Tag Prefix</label>
+                    <input type="text" id="sectionTagPrefix" name="sectionTagPrefix" required />
+                </div>
+                <h2>Field Settings</h2>
+                <div class="formControl">
+                    <label for="effortField">Effort Field</label>
+                    <input type="text" id="effortField" name="effortField" required />
+                </div>
+                <div class="formControl">
+                    <label for="effortMeasurement">Effort Measurement</label>
+                    <input type="text" id="effortMeasurement" name="effortMeasurement" required />
+                </div>
+                <div class="formControl">
+                    <label for="priorityField">Priority Field</label>
+                    <input type="text" id="priorityField" name="priorityField" required />
+                </div>
                 <button type="submit">Generate</button>
             </form>
         </div>
-    </div>
 
-    <div id="actionBar">
-        <div class="buttonRadioGroup">
-            <label>
-                <input type="radio" name="selectedDiagramType" value="gantt"
-                    onchange="cacheSetting(event.target.name, event.target.value)" />
-                Gantt
-            </label>
-            <label>
-                <input type="radio" name="selectedDiagramType" value="dependency"
-                    onchange="cacheSetting(event.target.name, event.target.value)" />
-                Dependency
-            </label>
+        <div id="actionBar">
+            <div class="buttonRadioGroup">
+                <label>
+                    <input type="radio" name="selectedDiagramType" value="gantt"
+                        onchange="cacheSetting(event.target.name, event.target.value)" />
+                    Gantt
+                </label>
+                <label>
+                    <input type="radio" name="selectedDiagramType" value="dependency"
+                        onchange="cacheSetting(event.target.name, event.target.value)" />
+                    Dependency
+                </label>
+            </div>
         </div>
     </div>
 
     <div id="mermaidDiagramOutput"></div>
+
+    <div id="loadingOverlay"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js"
         integrity="sha256-OpMBanPcgrqJDZGfm7sXbz2p2YNBZQwLUX8llcxo/vg=" crossorigin="anonymous"></script>
