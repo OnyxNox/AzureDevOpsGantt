@@ -6,8 +6,8 @@
 
 Turn Azure DevOps Feature | Into Gantt Diagram | Using Dependency Diagram
 :---: | :---: | :---:
-![](./.images/AzureDevOpsQuery.png) | _(w/ 2 Resources)_<br />![](./.images/GanttDiagramExample.png) | ![](./.images/DependencyDiagramExample.png)
-![](./.images/AzureDevOpsLinks.png) | &nbsp; | &nbsp;
+![](./.images/AzureDevOpsQuery.png) | _(w/ 1 Resource completion date is 2025-07-14)_<br />![](./.images/GanttDiagram1ResourceExample.png) | ![](./.images/DependencyDiagramExample.png)
+![](./.images/AzureDevOpsLinks.png) | _(w/ 3 Resources completion date is 2025-06-19)_<br />![](./.images/GanttDiagram3ResourcesExample.png) | &nbsp;
 
 ## How to Use
 
