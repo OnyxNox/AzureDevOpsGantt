@@ -57,7 +57,14 @@ class ControlPanel {
             userEmail: formData.get(Constants.userInterface.USER_EMAIL_ELEMENT_ID),
         };
 
-        localStorage.setItem(Constants.localStorage.CONTEXT_KEY, JSON.stringify(context));
+        const localStorageContext = { ...context };
+        localStorageContext.personalAccessToken = Settings.cacheCredentials
+            ? localStorageContext.personalAccessToken : "";
+        localStorageContext.userEmail = Settings.cacheCredentials
+            ? localStorageContext.userEmail : "";
+
+        localStorage.setItem(
+            Constants.localStorage.CONTEXT_KEY, JSON.stringify(localStorageContext));
 
         const azureDevOpsClient = new AzureDevOpsClient(
             context.userEmail,

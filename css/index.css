@@ -9,7 +9,7 @@
     --control-panel-z-index: 100;
 
     /* Controls Variables */
-    --control-background-color: rgb(47, 47, 47);
+    --control-background-color: rgb(51, 51, 51);
     --control-border-color: rgb(76, 76, 76);
     --control-border-radius: 7px;
     --control-border-width: 2px;
@@ -53,6 +53,40 @@ body {
     width: 100%;
 }
 
+input[type="checkbox"] {
+    display: none;
+}
+
+input[type="checkbox"]+label {
+    cursor: pointer;
+    position: relative;
+}
+
+input[type="checkbox"]+label:before {
+    background: var(--control-background-color);
+    border: var(--control-border-width) solid var(--control-border-color);
+    border-radius: var(--control-border-radius);
+    content: "";
+    display: inline-block;
+    height: 20px;
+    margin-right: 10px;
+    width: 20px;
+    vertical-align: text-top;
+}
+
+input[type="checkbox"]:checked+label:after {
+    background-color: var(--page-color);
+    box-shadow: 2px 0 0 var(--page-color), 4px 0 0 var(--page-color), 4px -2px 0 var(--page-color),
+        4px -4px 0 var(--page-color), 4px -6px 0 var(--page-color), 4px -8px 0 var(--page-color);
+    content: "";
+    height: 2px;
+    position: absolute;
+    left: 5px;
+    top: 9px;
+    transform: rotate(45deg);
+    width: 2px;
+}
+
 .buttonRadioGroup {
     display: flex;
     flex-direction: row;
@@ -60,7 +94,6 @@ body {
 
 .buttonRadioGroup>label {
     background-color: var(--control-background-color);
-    border: var(--control-panel-border-width) solid var(--control-border-color);
     cursor: pointer;
     padding: 8px 13px;
 }
@@ -75,7 +108,6 @@ body {
 
 .buttonRadioGroup>label:has(input[type="radio"]:checked) {
     background-color: var(--color-primary);
-    border: var(--control-border-width) solid var(--color-primary);
 }
 
 .buttonRadioGroup>label>input[type="radio"] {
