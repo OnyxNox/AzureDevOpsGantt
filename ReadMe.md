@@ -111,6 +111,7 @@ effort descending. Parallel task execution is restricted by the defined _Resourc
 1. [ ] Allow user to change the tool's primary color as well as the gantt diagram's colors.
 1. [ ] Update diagram's work item node colors based on their current status.
 1. [ ] Allow the user to time travel using the [`asOf` query Parameter](https://learn.microsoft.com/en-us/azure/devops/boards/queries/wiql-syntax#query-language-overview) ([1](https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/get-work-item)) to show historical snapshots of work items.
+1. [ ] Expanding on the entry above, allow the gantt diagram to account for work items running over their estimated effort.
 
 ## Developer Notes
 

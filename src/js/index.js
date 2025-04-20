@@ -28,6 +28,7 @@ const Settings = (function () {
         JSON.parse(localStorage.getItem(Constants.localStorage.SETTINGS_KEY) ?? "{}");
 
     const defaultSettings = {
+        cacheCredentials: false,
         dependencyRelation: "Tests",
         effortField: "Microsoft.VSTS.Scheduling.RemainingWork",
         effortFieldTimeSpan: "d",
@@ -87,18 +88,26 @@ async function handleWindowOnLoad() {
     }
 
     [
+        ["cacheCredentials", Settings.cacheCredentials],
         [Constants.userInterface.DEPENDENCY_RELATION_ELEMENT_ID, Settings.dependencyRelation],
         [Constants.userInterface.EFFORT_FIELD_ELEMENT_ID, Settings.effortField],
         [Constants.userInterface.EFFORT_MEASUREMENT_ELEMENT_ID, Settings.effortFieldTimeSpan],
         [Constants.userInterface.PRIORITY_FIELD_ELEMENT_ID, Settings.priorityField],
         [Constants.userInterface.RESOURCE_COUNT_ELEMENT_ID, Settings.resourceCount],
         [Constants.userInterface.SECTION_TAG_PREFIX_ELEMENT_ID, Settings.sectionTagPrefix],
-    ].forEach(([elementId, value]) => document.getElementById(elementId).value = value);
+        [document.querySelector(`input[type="radio"][name="selectedDiagramType"]`
+            + `[value=${Settings.selectedDiagramType}]`), true]
+    ].forEach(([inputElementId, value]) => {
+        const inputElement = typeof inputElementId === "string" || inputElementId instanceof String
+            ? document.getElementById(inputElementId)
+            : inputElementId;
 
-    document
-        .querySelector(`input[type="radio"][name="selectedDiagramType"]`
-            + `[value=${Settings.selectedDiagramType}]`)
-        .checked = true;
+        if (inputElement.type === "checkbox" || inputElement.type === "radio") {
+            inputElement.checked = value;
+        } else {
+            inputElement.value = value;
+        }
+    });
 
     const previousSelectedDiagram = Settings.selectedDiagramType == DiagramType.Gantt
         ? localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY)

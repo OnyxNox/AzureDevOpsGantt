@@ -22,6 +22,20 @@
         <div id="controlPanelContent">
             <h1>Control Panel</h1>
             <form onsubmit="ControlPanel.handleFormOnSubmit(event)">
+                <h2>Authentication</h2>
+                <div class="formControl">
+                    <label for="userEmail">User Email</label>
+                    <input type="email" id="userEmail" name="userEmail" required />
+                </div>
+                <div class="formControl">
+                    <label for="personalAccessToken">Personal Access Token</label>
+                    <input type="password" id="personalAccessToken" name="personalAccessToken" required />
+                </div>
+                <div class="formControl">
+                    <input type="checkbox" id="cacheCredentials" name="cacheCredentials"
+                        onchange="cacheSetting(event.target.name, this.checked)" />
+                    <label for="cacheCredentials">Cache Credentials</label>
+                </div>
                 <h2>Context</h2>
                 <div class="formControl">
                     <label for="organizationName">Organization Name</label>
@@ -34,14 +48,6 @@
                 <div class="formControl">
                     <label for="featureWorkItemId">Feature Work Item ID</label>
                     <input type="text" id="featureWorkItemId" name="featureWorkItemId" required />
-                </div>
-                <div class="formControl">
-                    <label for="userEmail">User Email</label>
-                    <input type="email" id="userEmail" name="userEmail" required />
-                </div>
-                <div class="formControl">
-                    <label for="personalAccessToken">Personal Access Token</label>
-                    <input type="password" id="personalAccessToken" name="personalAccessToken" required />
                 </div>
                 <h2>Settings</h2>
                 <div class="formControl">
