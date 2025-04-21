@@ -113,7 +113,7 @@ class DiagramClient {
                     .fields[Constants.azure_dev_ops.WORK_ITEM_TAGS_FIELD]
                     ?.split(';')
                     .find(tag => tag.startsWith(Settings.sectionTagPrefix))
-                    .replace(Settings.sectionTagPrefix, '')
+                    ?.replace(Settings.sectionTagPrefix, '')
                     ?? defaultWorkItemSection);
                 const workItemTitle = DiagramClient.#sanitizeMermaidTitle(
                     workItem.fields[Constants.azure_dev_ops.WORK_ITEM_TITLE_FIELD]);
