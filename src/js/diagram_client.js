@@ -1,6 +1,4 @@
 const mermaidRenderOptions = {
-    startOnLoad: false,
-    theme: "dark",
     flowchart: { useMaxWidth: true },
     gantt: {
         barGap: 6,
@@ -10,8 +8,10 @@ const mermaidRenderOptions = {
         rightPadding: 0,
         sectionFontSize: 16,
         useWidth: window.innerWidth,
-        // displayMode: 'compact',
     },
+    securityLevel: "loose",
+    startOnLoad: false,
+    theme: "dark",
 };
 
 mermaid.initialize(mermaidRenderOptions);

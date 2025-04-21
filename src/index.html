@@ -13,7 +13,7 @@
 
 <body>
     <div id="controlPanel">
-        <input type="checkbox" id="controlPanelToggle" checked />
+        <input type="checkbox" id="controlPanelToggle" />
         <label for="controlPanelToggle" id="controlPanelToggleLabel">
             <div id="hamburgerWrapper">
                 <div id="hamburger"></div>
@@ -94,20 +94,20 @@
                 <button type="submit">Generate</button>
             </form>
         </div>
+    </div>
 
-        <div id="actionBar">
-            <div class="buttonRadioGroup">
-                <label>
-                    <input type="radio" name="selectedDiagramType" value="gantt"
-                        onchange="cacheSetting(event, event.target.value)" />
-                    Gantt
-                </label>
-                <label>
-                    <input type="radio" name="selectedDiagramType" value="dependency"
-                        onchange="cacheSetting(event, event.target.value)" />
-                    Dependency
-                </label>
-            </div>
+    <div id="actionBar">
+        <div class="buttonRadioGroup">
+            <label>
+                <input type="radio" name="selectedDiagramType" value="gantt"
+                    onchange="cacheSetting(event, event.target.value)" />
+                Gantt
+            </label>
+            <label>
+                <input type="radio" name="selectedDiagramType" value="dependency"
+                    onchange="cacheSetting(event, event.target.value)" />
+                Dependency
+            </label>
         </div>
     </div>
 
