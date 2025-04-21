@@ -122,7 +122,7 @@ class DiagramClient {
 
                 sectionGanttLines.push(`${workItemTitle} : ${workItem.id}`
                     + `, after ${lastCompletedWorkItemId}`
-                    + `, ${workItem.fields[Settings.effortField]}${Settings.effortFieldTimeSpan}`);
+                    + `, ${workItem.fields[Settings.effortField]}${Settings.effortFieldUnits}`);
 
                 ganttLines.set(workItemSection, sectionGanttLines);
 

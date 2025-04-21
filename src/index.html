@@ -7,12 +7,13 @@
     <title>Azure DevOps Gantt (A-DOG)</title>
     <link href="./css/index.css" rel="stylesheet" />
     <link href="./css/control_panel.css" rel="stylesheet" />
+    <link href="./css/dropdown.css" rel="stylesheet" />
     <link href="./css/gantt.css" rel="stylesheet" />
 </head>
 
 <body>
     <div id="controlPanel">
-        <input type="checkbox" id="controlPanelToggle" />
+        <input type="checkbox" id="controlPanelToggle" checked />
         <label for="controlPanelToggle" id="controlPanelToggleLabel">
             <div id="hamburgerWrapper">
                 <div id="hamburger"></div>
@@ -33,7 +34,7 @@
                 </div>
                 <div class="formControl">
                     <input type="checkbox" id="cacheCredentials" name="cacheCredentials"
-                        onchange="cacheSetting(event.target.name, this.checked)" />
+                        onchange="cacheSetting(event, this.checked)" />
                     <label for="cacheCredentials">Cache Credentials</label>
                 </div>
                 <h2>Context</h2>
@@ -53,7 +54,7 @@
                 <div class="formControl">
                     <label for="resourceCount">Resource Count</label>
                     <input type="number" id="resourceCount" name="resourceCount" min="1" max="100"
-                        onchange="cacheSetting(event.target.name, parseInt(event.target.value, 10))" required />
+                        onchange="cacheSetting(event, parseInt(event.target.value, 10))" required />
                 </div>
                 <div class="formControl">
                     <label for="dependencyRelation">Dependency Relation</label>
@@ -69,8 +70,22 @@
                     <input type="text" id="effortField" name="effortField" required />
                 </div>
                 <div class="formControl">
-                    <label for="effortMeasurement">Effort Measurement</label>
-                    <input type="text" id="effortMeasurement" name="effortMeasurement" required />
+                    <label for="effortFieldUnits">Effort Field Units</label>
+                    <div id="effortFieldUnitsDropdown" class="dropdown">
+                        <label><input type="checkbox" /> Effort Unit</label>
+                        <div class="dropdownContent">
+                            <label>
+                                <input type="radio" name="effortFieldUnits" value="d"
+                                    onchange="cacheSetting(event, event.target.value, true)" />
+                                Days
+                            </label>
+                            <label>
+                                <input type="radio" name="effortFieldUnits" value="w"
+                                    onchange="cacheSetting(event, event.target.value, true)" />
+                                Weeks
+                            </label>
+                        </div>
+                    </div>
                 </div>
                 <div class="formControl">
                     <label for="priorityField">Priority Field</label>
@@ -84,12 +99,12 @@
             <div class="buttonRadioGroup">
                 <label>
                     <input type="radio" name="selectedDiagramType" value="gantt"
-                        onchange="cacheSetting(event.target.name, event.target.value)" />
+                        onchange="cacheSetting(event, event.target.value)" />
                     Gantt
                 </label>
                 <label>
                     <input type="radio" name="selectedDiagramType" value="dependency"
-                        onchange="cacheSetting(event.target.name, event.target.value)" />
+                        onchange="cacheSetting(event, event.target.value)" />
                     Dependency
                 </label>
             </div>

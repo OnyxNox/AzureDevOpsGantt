@@ -13,10 +13,18 @@ const DiagramType = Object.freeze({
     Gantt: "gantt",
 });
 
-const EffortUnits = Object.freeze({
+/**
+ * Azure DevOps effort field unit of measure enumeration.
+ */
+const EffortUnit = Object.freeze({
+    /**
+     * Effort field is measured in days.
+     */
     Days: 'd',
-    Hours: 'h',
-    Minutes: 'm',
+
+    /**
+     * Effort field is measured in weeks.
+     */
     Weeks: 'w',
 });
 
@@ -31,7 +39,7 @@ const Settings = (function () {
         cacheCredentials: false,
         dependencyRelation: "Tests",
         effortField: "Microsoft.VSTS.Scheduling.RemainingWork",
-        effortFieldTimeSpan: "d",
+        effortFieldUnits: EffortUnit.Days,
         priorityField: "Microsoft.VSTS.Common.Priority",
         resourceCount: 1,
         sectionTagPrefix: "Section:",
@@ -45,10 +53,17 @@ window.onload = handleWindowOnLoad;
 
 /**
  * Write setting to local storage and refresh diagram from local storage.
- * @param {string} key Settings field key.
+ * @param {Object} event Form control change event.
  * @param {any} value Settings field value.
+ * @param {boolean} isDropdown Is a dropdown field?
  */
-async function cacheSetting(key, value) {
+async function cacheSetting(event, value, isDropdown = false) {
+    const key = event.target.name;
+
+    if (isDropdown) {
+        setDropdownValue(event.target, value);
+    }
+
     Settings[key] = value;
 
     localStorage.setItem(Constants.localStorage.SETTINGS_KEY, JSON.stringify(Settings));
@@ -64,7 +79,8 @@ async function cacheSetting(key, value) {
 }
 
 /**
- * Handle the windows's onLoad event; used to seed inputs from the previous session.
+ * Handle the windows's onLoad event; used to initialize controls and seed inputs from the previous
+ * session.
  */
 async function handleWindowOnLoad() {
     const previousContext = localStorage.getItem(Constants.localStorage.CONTEXT_KEY);
@@ -91,10 +107,11 @@ async function handleWindowOnLoad() {
         ["cacheCredentials", Settings.cacheCredentials],
         [Constants.userInterface.DEPENDENCY_RELATION_ELEMENT_ID, Settings.dependencyRelation],
         [Constants.userInterface.EFFORT_FIELD_ELEMENT_ID, Settings.effortField],
-        [Constants.userInterface.EFFORT_MEASUREMENT_ELEMENT_ID, Settings.effortFieldTimeSpan],
         [Constants.userInterface.PRIORITY_FIELD_ELEMENT_ID, Settings.priorityField],
         [Constants.userInterface.RESOURCE_COUNT_ELEMENT_ID, Settings.resourceCount],
         [Constants.userInterface.SECTION_TAG_PREFIX_ELEMENT_ID, Settings.sectionTagPrefix],
+        [document.querySelector(`input[type="radio"][name="effortFieldUnits"]`
+            + `[value=${Settings.effortFieldUnits}]`), true],
         [document.querySelector(`input[type="radio"][name="selectedDiagramType"]`
             + `[value=${Settings.selectedDiagramType}]`), true]
     ].forEach(([inputElementId, value]) => {
@@ -109,6 +126,9 @@ async function handleWindowOnLoad() {
         }
     });
 
+    setDropdownValue(document.querySelector(`input[type="radio"][name="effortFieldUnits"]`
+        + `[value=${Settings.effortFieldUnits}]`), Settings.effortFieldUnits);
+
     const previousSelectedDiagram = Settings.selectedDiagramType == DiagramType.Gantt
         ? localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY)
         : localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
@@ -117,4 +137,11 @@ async function handleWindowOnLoad() {
         document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID)
             .innerHTML = (await mermaid.render("updatedGraph", previousSelectedDiagram)).svg;
     }
+}
+
+function setDropdownValue(eventTarget, value) {
+    const dropdownParent = eventTarget.parentElement?.parentElement?.parentElement;
+    const selected = Object.keys(EffortUnit).find(unit => EffortUnit[unit] === value);
+
+    dropdownParent.childNodes[1].innerHTML = `<input type="checkbox" /> ${selected}`;
 }

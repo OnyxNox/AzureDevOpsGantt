@@ -36,7 +36,7 @@
     margin-bottom: var(--control-panel-control-margin-bottom);
 }
 
-#controlPanelContent .formControl label {
+#controlPanelContent .formControl>label {
     margin-bottom: calc(var(--control-panel-control-margin-bottom) / 2);
 }
 
