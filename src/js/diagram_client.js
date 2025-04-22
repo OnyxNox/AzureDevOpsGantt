@@ -22,7 +22,7 @@ window.addEventListener("resize", async () => {
 
     mermaid.initialize(mermaidRenderOptions);
 
-    if (Settings.selectedDiagramType === DiagramType.Gantt) {
+    if (Settings.actionBar.diagramType === DiagramType.Gantt) {
         const ganttDiagram = localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY);
 
         document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID)
@@ -45,13 +45,13 @@ class DiagramClient {
             let parentWorkItems = workItem
                 .relations
                 .filter(workItemRelation =>
-                    workItemRelation.attributes.name === Settings.dependencyRelation)
+                    workItemRelation.attributes.name === Settings.environment.dependencyRelation)
                 .map(dependencyWorkItemRelation =>
                     ControlPanel.getWorkItemIdFromUrl(dependencyWorkItemRelation.url))
                 .map(dependencyWorkItemId => workItems
                     .find(workItem => workItem.id === dependencyWorkItemId));
 
-            workItem.fields[Settings.effortField] = workItem.fields[Settings.effortField]
+            workItem.fields[Settings.environment.effortField] = workItem.fields[Settings.environment.effortField]
                 ?? Constants.azure_dev_ops.WORK_ITEM_DEFAULT_EFFORT;
 
             this.#dependencyGraphNodes.push({ workItem, parentWorkItems });
@@ -102,7 +102,7 @@ class DiagramClient {
 
         let lastCompletedWorkItemId = featureStartId;
         while (completedWorkItems.length < this.#dependencyGraphNodes.length) {
-            const availableResourceCount = Settings.resourceCount - scheduledWorkItems.length;
+            const availableResourceCount = Settings.configuration.resourceCount - scheduledWorkItems.length;
 
             let readyToScheduleWorkItems = this
                 .#getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems)
@@ -112,8 +112,8 @@ class DiagramClient {
                 const workItemSection = DiagramClient.#sanitizeMermaidTitle(workItem
                     .fields[Constants.azure_dev_ops.WORK_ITEM_TAGS_FIELD]
                     ?.split(';')
-                    .find(tag => tag.startsWith(Settings.sectionTagPrefix))
-                    ?.replace(Settings.sectionTagPrefix, '')
+                    .find(tag => tag.startsWith(Settings.environment.tagSectionPrefix))
+                    ?.replace(Settings.environment.tagSectionPrefix, '')
                     ?? defaultWorkItemSection);
                 const workItemTitle = DiagramClient.#sanitizeMermaidTitle(
                     workItem.fields[Constants.azure_dev_ops.WORK_ITEM_TITLE_FIELD]);
@@ -122,7 +122,7 @@ class DiagramClient {
 
                 sectionGanttLines.push(`${workItemTitle} : ${workItem.id}`
                     + `, after ${lastCompletedWorkItemId}`
-                    + `, ${workItem.fields[Settings.effortField]}${Settings.effortFieldUnits}`);
+                    + `, ${workItem.fields[Settings.environment.effortField]}${Settings.environment.effortFieldUnits}`);
 
                 ganttLines.set(workItemSection, sectionGanttLines);
 
@@ -130,18 +130,18 @@ class DiagramClient {
             });
 
             const leastScheduledEffortRemaining = Math.min(
-                ...scheduledWorkItems.map(workItem => workItem.fields[Settings.effortField]));
+                ...scheduledWorkItems.map(workItem => workItem.fields[Settings.environment.effortField]));
 
             scheduledWorkItems.forEach(workItem =>
-                workItem.fields[Settings.effortField] -= leastScheduledEffortRemaining);
+                workItem.fields[Settings.environment.effortField] -= leastScheduledEffortRemaining);
 
             const iterationCompletedWorkItems = scheduledWorkItems
-                .filter(workItem => workItem.fields[Settings.effortField] <= 0);
+                .filter(workItem => workItem.fields[Settings.environment.effortField] <= 0);
 
             completedWorkItems.push(...iterationCompletedWorkItems);
 
             scheduledWorkItems = scheduledWorkItems
-                .filter(workItem => workItem.fields[Settings.effortField] > 0);
+                .filter(workItem => workItem.fields[Settings.environment.effortField] > 0);
 
             lastCompletedWorkItemId = iterationCompletedWorkItems[0].id;
         }
@@ -198,11 +198,11 @@ class DiagramClient {
             ))
             .map(node => node.workItem)
             .sort((workItemA, workItemB) => {
-                if (workItemA.fields[Settings.priorityField] !== workItemB.fields[Settings.priorityField]) {
-                    return workItemA.fields[Settings.priorityField] - workItemB.fields[Settings.priorityField];
+                if (workItemA.fields[Settings.environment.priorityField] !== workItemB.fields[Settings.environment.priorityField]) {
+                    return workItemA.fields[Settings.environment.priorityField] - workItemB.fields[Settings.environment.priorityField];
                 }
 
-                return workItemB.fields[Settings.effortField] - workItemA.fields[Settings.effortField];
+                return workItemB.fields[Settings.environment.effortField] - workItemA.fields[Settings.environment.effortField];
             });
     }
 

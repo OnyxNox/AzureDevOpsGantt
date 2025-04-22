@@ -26,48 +26,51 @@
                 <h2>Authentication</h2>
                 <div class="formControl">
                     <label for="userEmail">User Email</label>
-                    <input type="email" id="userEmail" name="userEmail" required />
+                    <input type="email" id="userEmail" name="userEmail"
+                        oninput="cacheSetting('authentication', event, event.target.value)" required />
                 </div>
                 <div class="formControl">
                     <label for="personalAccessToken">Personal Access Token</label>
-                    <input type="password" id="personalAccessToken" name="personalAccessToken" required />
+                    <input type="password" id="personalAccessToken" name="personalAccessToken"
+                        oninput="cacheSetting('authentication', event, event.target.value)" required />
                 </div>
                 <div class="formControl">
                     <input type="checkbox" id="cacheCredentials" name="cacheCredentials"
-                        onchange="cacheSetting(event, this.checked)" />
+                        oninput="cacheSetting('authentication', event, this.checked)" />
                     <label for="cacheCredentials">Cache Credentials</label>
                 </div>
                 <h2>Context</h2>
                 <div class="formControl">
                     <label for="organizationName">Organization Name</label>
-                    <input type="text" id="organizationName" name="organizationName" required />
+                    <input type="text" id="organizationName" name="organizationName"
+                        oninput="cacheSetting('context', event, event.target.value)" required />
                 </div>
                 <div class="formControl">
                     <label for="projectName">Project Name</label>
-                    <input type="text" id="projectName" name="projectName" required />
+                    <input type="text" id="projectName" name="projectName"
+                        oninput="cacheSetting('context', event, event.target.value)" required />
                 </div>
                 <div class="formControl">
                     <label for="featureWorkItemId">Feature Work Item ID</label>
-                    <input type="text" id="featureWorkItemId" name="featureWorkItemId" required />
+                    <input type="text" id="featureWorkItemId" name="featureWorkItemId"
+                        oninput="cacheSetting('context', event, event.target.value)" required />
                 </div>
-                <h2>Settings</h2>
+                <h2>Configuration</h2>
                 <div class="formControl">
                     <label for="resourceCount">Resource Count</label>
                     <input type="number" id="resourceCount" name="resourceCount" min="1" max="100"
-                        onchange="cacheSetting(event, parseInt(event.target.value, 10))" required />
+                        onchange="cacheSetting('configuration', event, parseInt(event.target.value, 10))" required />
                 </div>
+                <h2>Environment</h2>
                 <div class="formControl">
                     <label for="dependencyRelation">Dependency Relation</label>
-                    <input type="text" id="dependencyRelation" name="dependencyRelation" required />
+                    <input type="text" id="dependencyRelation" name="dependencyRelation"
+                        oninput="cacheSetting('environment', event, event.target.value)" required />
                 </div>
-                <div class="formControl">
-                    <label for="sectionTagPrefix">Section Tag Prefix</label>
-                    <input type="text" id="sectionTagPrefix" name="sectionTagPrefix" required />
-                </div>
-                <h2>Field Settings</h2>
                 <div class="formControl">
                     <label for="effortField">Effort Field</label>
-                    <input type="text" id="effortField" name="effortField" required />
+                    <input type="text" id="effortField" name="effortField"
+                        oninput="cacheSetting('environment', event, event.target.value)" required />
                 </div>
                 <div class="formControl">
                     <label for="effortFieldUnits">Effort Field Units</label>
@@ -76,12 +79,12 @@
                         <div class="dropdownContent">
                             <label>
                                 <input type="radio" name="effortFieldUnits" value="d"
-                                    onchange="cacheSetting(event, event.target.value, true)" />
+                                    onchange="cacheSetting('environment', event, event.target.value, true)" />
                                 Days
                             </label>
                             <label>
                                 <input type="radio" name="effortFieldUnits" value="w"
-                                    onchange="cacheSetting(event, event.target.value, true)" />
+                                    onchange="cacheSetting('environment', event, event.target.value, true)" />
                                 Weeks
                             </label>
                         </div>
@@ -89,7 +92,13 @@
                 </div>
                 <div class="formControl">
                     <label for="priorityField">Priority Field</label>
-                    <input type="text" id="priorityField" name="priorityField" required />
+                    <input type="text" id="priorityField" name="priorityField"
+                        oninput="cacheSetting('environment', event, event.target.value)" required />
+                </div>
+                <div class="formControl">
+                    <label for="tagSectionPrefix">Tag Section Prefix</label>
+                    <input type="text" id="tagSectionPrefix" name="tagSectionPrefix"
+                        oninput="cacheSetting('environment', event, event.target.value)" required />
                 </div>
                 <button type="submit">Generate</button>
             </form>
@@ -99,13 +108,13 @@
     <div id="actionBar">
         <div class="buttonRadioGroup">
             <label>
-                <input type="radio" name="selectedDiagramType" value="gantt"
-                    onchange="cacheSetting(event, event.target.value)" />
+                <input type="radio" name="diagramType" value="gantt"
+                    onchange="cacheSetting('actionBar', event, event.target.value)" />
                 Gantt
             </label>
             <label>
-                <input type="radio" name="selectedDiagramType" value="dependency"
-                    onchange="cacheSetting(event, event.target.value)" />
+                <input type="radio" name="diagramType" value="dependency"
+                    onchange="cacheSetting('actionBar', event, event.target.value)" />
                 Dependency
             </label>
         </div>
@@ -122,6 +131,7 @@
     <script src="./js/constants.js"></script>
     <script src="./js/control_panel.js"></script>
     <script src="./js/diagram_client.js"></script>
+    <script src="./js/enums.js"></script>
     <script src="./js/index.js"></script>
 </body>
 

@@ -12,7 +12,7 @@ class ControlPanel {
         document.getElementById(Constants.userInterface.LOADING_OVERLAY_ELEMENT_ID)
             .classList.add("show");
 
-        const featureWorkItems = await ControlPanel.#getFeatureWorkItemsAsync(event.target);
+        const featureWorkItems = await ControlPanel.#getFeatureWorkItemsAsync();
         const featureWorkItem = featureWorkItems.find(ControlPanel.#isFeatureWorkItem);
 
         const diagramClient = new DiagramClient(featureWorkItems.filter(
@@ -26,7 +26,7 @@ class ControlPanel {
         localStorage.setItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY, dependencyDiagram);
         localStorage.setItem(Constants.localStorage.GANTT_DIAGRAM_KEY, ganttDiagram);
 
-        const diagramType = Settings.selectedDiagramType == DiagramType.Gantt
+        const diagramType = Settings.actionBar.diagramType == DiagramType.Gantt
             ? ganttDiagram : dependencyDiagram;
 
         document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID)
@@ -45,40 +45,20 @@ class ControlPanel {
      * details.
      * @returns {[]} Array of Azure DevOps feature work items, including the feature work item.
      */
-    static async #getFeatureWorkItemsAsync(htmlFormElement) {
-        const formData = new FormData(htmlFormElement);
-        const context = {
-            featureWorkItemId:
-                formData.get(Constants.userInterface.FEATURE_WORK_ITEM_ID_ELEMENT_ID),
-            organizationName: formData.get(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID),
-            personalAccessToken:
-                formData.get(Constants.userInterface.PERSONAL_ACCESS_TOKEN_ELEMENT_ID),
-            projectName: formData.get(Constants.userInterface.PROJECT_NAME_ELEMENT_ID),
-            userEmail: formData.get(Constants.userInterface.USER_EMAIL_ELEMENT_ID),
-        };
-
-        const localStorageContext = { ...context };
-        localStorageContext.personalAccessToken = Settings.cacheCredentials
-            ? localStorageContext.personalAccessToken : "";
-        localStorageContext.userEmail = Settings.cacheCredentials
-            ? localStorageContext.userEmail : "";
-
-        localStorage.setItem(
-            Constants.localStorage.CONTEXT_KEY, JSON.stringify(localStorageContext));
-
+    static async #getFeatureWorkItemsAsync() {
         const azureDevOpsClient = new AzureDevOpsClient(
-            context.userEmail,
-            context.personalAccessToken,
-            context.organizationName,
-            context.projectName,
+            Settings.authentication.userEmail,
+            Settings.authentication.personalAccessToken,
+            Settings.context.organizationName,
+            Settings.context.projectName,
         );
 
-        const featureWorkItems = [await azureDevOpsClient.getWorkItem(context.featureWorkItemId)];
+        const featureWorkItems = [await azureDevOpsClient.getWorkItem(Settings.context.featureWorkItemId)];
 
         const childWorkItemIds = featureWorkItems[0]
             .relations
             .filter(workItemRelation =>
-                workItemRelation.attributes.name === Constants.azure_dev_ops.FEATURE_CHILD_RELATION)
+                workItemRelation.attributes.name === "Child")
             .map(childWorkItem => ControlPanel.getWorkItemIdFromUrl(childWorkItem.url));
 
         featureWorkItems.push(...(await azureDevOpsClient.getWorkItems(childWorkItemIds)).value);

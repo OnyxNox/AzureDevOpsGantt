@@ -8,11 +8,6 @@ const Constants = (function () {
          */
         azure_dev_ops: {
             /**
-             * Azure DevOps Feature child work item relation type.
-             */
-            FEATURE_CHILD_RELATION: "Child",
-
-            /**
              * Azure DevOps Feature work item start date field name.
              */
             FEATURE_WORK_ITEM_START_DATE_FIELD: "Microsoft.VSTS.Scheduling.StartDate",
@@ -52,11 +47,6 @@ const Constants = (function () {
          */
         localStorage: {
             /**
-             * Local storage context key; value contains previous session's context.
-             */
-            CONTEXT_KEY: "context",
-
-            /**
              * Local storage dependency diagram key; value contains previous session's dependency
              * diagram.
              */
@@ -82,26 +72,6 @@ const Constants = (function () {
             CONTROL_PANEL_TOGGLE_ELEMENT_ID: "controlPanelToggle",
 
             /**
-             * Dependency relation input HTML element identifier.
-             */
-            DEPENDENCY_RELATION_ELEMENT_ID: "dependencyRelation",
-
-            /**
-             * Effort field input HTML element identifier.
-             */
-            EFFORT_FIELD_ELEMENT_ID: "effortField",
-
-            /**
-             * Effort measurement input HTML element identifier.
-             */
-            EFFORT_MEASUREMENT_ELEMENT_ID: "effortMeasurement",
-
-            /**
-             * Feature work item identifier input HTML element identifier.
-             */
-            FEATURE_WORK_ITEM_ID_ELEMENT_ID: "featureWorkItemId",
-
-            /**
              * Loading overlay HTML element identifier.
              */
             LOADING_OVERLAY_ELEMENT_ID: "loadingOverlay",
@@ -110,41 +80,6 @@ const Constants = (function () {
              * Mermaid diagram output HTML element identifier.
              */
             MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID: "mermaidDiagramOutput",
-
-            /**
-             * Organization name input HTML element identifier.
-             */
-            ORGANIZATION_NAME_ELEMENT_ID: "organizationName",
-
-            /**
-             * Personal access token input HTML element identifier.
-             */
-            PERSONAL_ACCESS_TOKEN_ELEMENT_ID: "personalAccessToken",
-
-            /**
-             * Priority field input HTML element identifier.
-             */
-            PRIORITY_FIELD_ELEMENT_ID: "priorityField",
-
-            /**
-             * Project name input HTML element identifier.
-             */
-            PROJECT_NAME_ELEMENT_ID: "projectName",
-
-            /**
-             * Resource count input HTML element identifier.
-             */
-            RESOURCE_COUNT_ELEMENT_ID: "resourceCount",
-
-            /**
-             * Section tag prefix input HTML element identifier.
-             */
-            SECTION_TAG_PREFIX_ELEMENT_ID: "sectionTagPrefix",
-
-            /**
-             * User email input HTML element identifier.
-             */
-            USER_EMAIL_ELEMENT_ID: "userEmail",
         },
     };
 })();

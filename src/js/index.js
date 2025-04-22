@@ -1,34 +1,4 @@
 /**
- * Mermaid JS diagram type enumeration.
- */
-const DiagramType = Object.freeze({
-    /**
-     * Mermaid JS flowchart showing a dependency hierarchy diagram.
-     */
-    Dependency: "dependency",
-
-    /**
-     * Mermaid JS gantt chart showing a schedule diagram.
-     */
-    Gantt: "gantt",
-});
-
-/**
- * Azure DevOps effort field unit of measure enumeration.
- */
-const EffortUnit = Object.freeze({
-    /**
-     * Effort field is measured in days.
-     */
-    Days: 'd',
-
-    /**
-     * Effort field is measured in weeks.
-     */
-    Weeks: 'w',
-});
-
-/**
  * Global settings used across the application.
  */
 const Settings = (function () {
@@ -36,14 +6,29 @@ const Settings = (function () {
         JSON.parse(localStorage.getItem(Constants.localStorage.SETTINGS_KEY) ?? "{}");
 
     const defaultSettings = {
-        cacheCredentials: false,
-        dependencyRelation: "Tests",
-        effortField: "Microsoft.VSTS.Scheduling.RemainingWork",
-        effortFieldUnits: EffortUnit.Days,
-        priorityField: "Microsoft.VSTS.Common.Priority",
-        resourceCount: 1,
-        sectionTagPrefix: "Section:",
-        selectedDiagramType: DiagramType.Gantt,
+        actionBar: {
+            diagramType: DiagramType.Gantt,
+        },
+        authentication: {
+            cacheCredentials: false,
+            personalAccessToken: "",
+            userEmail: "",
+        },
+        configuration: {
+            resourceCount: 1,
+        },
+        context: {
+            featureWorkItemId: "",
+            organizationName: "",
+            projectName: "",
+        },
+        environment: {
+            dependencyRelation: "Tests",
+            effortField: "Microsoft.VSTS.Scheduling.RemainingWork",
+            effortFieldUnits: EffortUnit.Days,
+            priorityField: "Microsoft.VSTS.Common.Priority",
+            tagSectionPrefix: "Section:",
+        }
     };
 
     return { ...defaultSettings, ...previousSettings };
@@ -57,18 +42,17 @@ window.onload = handleWindowOnLoad;
  * @param {any} value Settings field value.
  * @param {boolean} isDropdown Is a dropdown field?
  */
-async function cacheSetting(event, value, isDropdown = false) {
-    const key = event.target.name;
+async function cacheSetting(section, event, value, isDropdown = false) {
+    Settings[section] ??= {};
+    Settings[section][event.target.name] = value;
+
+    localStorage.setItem(Constants.localStorage.SETTINGS_KEY, JSON.stringify(Settings));
 
     if (isDropdown) {
         setDropdownValue(event.target, value);
     }
 
-    Settings[key] = value;
-
-    localStorage.setItem(Constants.localStorage.SETTINGS_KEY, JSON.stringify(Settings));
-
-    const selectedDiagram = Settings.selectedDiagramType === DiagramType.Gantt
+    const selectedDiagram = Settings.actionBar.diagramType === DiagramType.Gantt
         ? localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY)
         : localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
 
@@ -83,37 +67,22 @@ async function cacheSetting(event, value, isDropdown = false) {
  * session.
  */
 async function handleWindowOnLoad() {
-    const previousContext = localStorage.getItem(Constants.localStorage.CONTEXT_KEY);
-
-    if (previousContext) {
-        const context = JSON.parse(previousContext);
-
-        document.getElementById(Constants.userInterface.FEATURE_WORK_ITEM_ID_ELEMENT_ID)
-            .value = context.featureWorkItemId ?? "";
-        document.getElementById(Constants.userInterface.ORGANIZATION_NAME_ELEMENT_ID)
-            .value = context.organizationName ?? "";
-        document.getElementById(Constants.userInterface.PERSONAL_ACCESS_TOKEN_ELEMENT_ID)
-            .value = context.personalAccessToken ?? "";
-        document.getElementById(Constants.userInterface.PROJECT_NAME_ELEMENT_ID)
-            .value = context.projectName ?? "";
-        document.getElementById(Constants.userInterface.USER_EMAIL_ELEMENT_ID)
-            .value = context.userEmail ?? "";
-    } else {
-        document.getElementById(Constants.userInterface.CONTROL_PANEL_TOGGLE_ELEMENT_ID)
-            .checked = true;
-    }
-
     [
-        ["cacheCredentials", Settings.cacheCredentials],
-        [Constants.userInterface.DEPENDENCY_RELATION_ELEMENT_ID, Settings.dependencyRelation],
-        [Constants.userInterface.EFFORT_FIELD_ELEMENT_ID, Settings.effortField],
-        [Constants.userInterface.PRIORITY_FIELD_ELEMENT_ID, Settings.priorityField],
-        [Constants.userInterface.RESOURCE_COUNT_ELEMENT_ID, Settings.resourceCount],
-        [Constants.userInterface.SECTION_TAG_PREFIX_ELEMENT_ID, Settings.sectionTagPrefix],
+        ["userEmail", Settings.authentication.userEmail],
+        ["personalAccessToken", Settings.authentication.personalAccessToken],
+        ["cacheCredentials", Settings.authentication.cacheCredentials],
+        ["organizationName", Settings.context.organizationName],
+        ["projectName", Settings.context.projectName],
+        ["featureWorkItemId", Settings.context.featureWorkItemId],
+        ["resourceCount", Settings.configuration.resourceCount],
+        ["dependencyRelation", Settings.environment.dependencyRelation],
+        ["effortField", Settings.environment.effortField],
         [document.querySelector(`input[type="radio"][name="effortFieldUnits"]`
-            + `[value=${Settings.effortFieldUnits}]`), true],
-        [document.querySelector(`input[type="radio"][name="selectedDiagramType"]`
-            + `[value=${Settings.selectedDiagramType}]`), true]
+            + `[value=${Settings.environment.effortFieldUnits}]`), true],
+        ["priorityField", Settings.environment.priorityField],
+        ["tagSectionPrefix", Settings.environment.tagSectionPrefix],
+        [document.querySelector(`input[type="radio"][name="diagramType"]`
+            + `[value=${Settings.actionBar.diagramType}]`), true]
     ].forEach(([inputElementId, value]) => {
         const inputElement = typeof inputElementId === "string" || inputElementId instanceof String
             ? document.getElementById(inputElementId)
@@ -121,15 +90,17 @@ async function handleWindowOnLoad() {
 
         if (inputElement.type === "checkbox" || inputElement.type === "radio") {
             inputElement.checked = value;
+
+            const grandParentElement = inputElement.parentElement?.parentElement?.parentElement;
+            if (grandParentElement?.classList.contains("dropdown") && value) {
+                setDropdownValue(inputElement, inputElement.value);
+            }
         } else {
             inputElement.value = value;
         }
     });
 
-    setDropdownValue(document.querySelector(`input[type="radio"][name="effortFieldUnits"]`
-        + `[value=${Settings.effortFieldUnits}]`), Settings.effortFieldUnits);
-
-    const previousSelectedDiagram = Settings.selectedDiagramType == DiagramType.Gantt
+    const previousSelectedDiagram = Settings.actionBar.diagramType == DiagramType.Gantt
         ? localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY)
         : localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
 
