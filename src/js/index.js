@@ -62,12 +62,16 @@ async function cacheSetting(section, event, value, isDropdown = false) {
             Settings.context.projectName,
         );
 
+        const indexedDbClient = new IndexedDbClient("LocalAzureDevOps", "WorkItems");
+
         const featureWorkItems = await azureDevOpsClient
             .getFeatureWorkItems(Settings.context.featureWorkItemId);
         const featureWorkItem = featureWorkItems
             .find(workItem => workItem.fields["System.WorkItemType"] === "Feature");
         const childWorkItems = featureWorkItems
             .filter(workItem => workItem.fields["System.WorkItemType"] !== "Feature");
+
+        indexedDbClient.upsert(featureWorkItems);
 
         const diagramClient = new DiagramClient(childWorkItems);
 
