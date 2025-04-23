@@ -55,12 +55,6 @@
                     <input type="text" id="featureWorkItemId" name="featureWorkItemId"
                         oninput="cacheSetting('context', event, event.target.value)" required />
                 </div>
-                <h2>Configuration</h2>
-                <div class="formControl">
-                    <label for="resourceCount">Resource Count</label>
-                    <input type="number" id="resourceCount" name="resourceCount" min="1" max="100"
-                        onchange="cacheSetting('configuration', event, parseInt(event.target.value, 10))" required />
-                </div>
                 <h2>Environment</h2>
                 <div class="formControl">
                     <label for="dependencyRelation">Dependency Relation</label>
@@ -117,6 +111,11 @@
                     onchange="cacheSetting('actionBar', event, event.target.value)" />
                 Dependency
             </label>
+        </div>
+        <div class="controlGroup">
+            <label for="resourceCount">Resource Count</label>
+            <input type="number" id="resourceCount" name="resourceCount" min="1" max="100"
+                onchange="cacheSetting('actionBar', event, parseInt(event.target.value))" required />
         </div>
     </div>
 

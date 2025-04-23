@@ -8,14 +8,12 @@ const Settings = (function () {
     const defaultSettings = {
         actionBar: {
             diagramType: DiagramType.Gantt,
+            resourceCount: 1,
         },
         authentication: {
             cacheCredentials: false,
             personalAccessToken: "",
             userEmail: "",
-        },
-        configuration: {
-            resourceCount: 1,
         },
         context: {
             featureWorkItemId: "",
@@ -36,6 +34,8 @@ const Settings = (function () {
 
 window.onload = handleWindowOnLoad;
 
+let getFeatureWorkItemsDebounceTimer;
+
 /**
  * Write setting to local storage and refresh diagram from local storage.
  * @param {Object} event Form control change event.
@@ -52,14 +52,39 @@ async function cacheSetting(section, event, value, isDropdown = false) {
         setDropdownValue(event.target, value);
     }
 
-    const selectedDiagram = Settings.actionBar.diagramType === DiagramType.Gantt
-        ? localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY)
-        : localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
+    clearTimeout(getFeatureWorkItemsDebounceTimer);
 
-    if (selectedDiagram) {
+    getFeatureWorkItemsDebounceTimer = setTimeout(async () => {
+        const azureDevOpsClient = new AzureDevOpsClient(
+            Settings.authentication.userEmail,
+            Settings.authentication.personalAccessToken,
+            Settings.context.organizationName,
+            Settings.context.projectName,
+        );
+
+        const featureWorkItems = await azureDevOpsClient
+            .getFeatureWorkItems(Settings.context.featureWorkItemId);
+        const featureWorkItem = featureWorkItems
+            .find(workItem => workItem.fields["System.WorkItemType"] === "Feature");
+        const childWorkItems = featureWorkItems
+            .filter(workItem => workItem.fields["System.WorkItemType"] !== "Feature");
+
+        const diagramClient = new DiagramClient(childWorkItems);
+
+        let dependencyDiagram = diagramClient.getDependencyDiagram();
+
+        const ganttDiagram = diagramClient.getGanttDiagram(new Date(
+            featureWorkItem.fields["Microsoft.VSTS.Scheduling.StartDate"]));
+
+        localStorage.setItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY, dependencyDiagram);
+        localStorage.setItem(Constants.localStorage.GANTT_DIAGRAM_KEY, ganttDiagram);
+
+        const diagramType = Settings.actionBar.diagramType == DiagramType.Gantt
+            ? ganttDiagram : dependencyDiagram;
+
         document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID)
-            .innerHTML = (await mermaid.render("updatedGraph", selectedDiagram)).svg;
-    }
+            .innerHTML = (await mermaid.render("updatedGraph", diagramType)).svg;
+    }, 250);
 }
 
 /**
@@ -74,15 +99,15 @@ async function handleWindowOnLoad() {
         ["organizationName", Settings.context.organizationName],
         ["projectName", Settings.context.projectName],
         ["featureWorkItemId", Settings.context.featureWorkItemId],
-        ["resourceCount", Settings.configuration.resourceCount],
         ["dependencyRelation", Settings.environment.dependencyRelation],
         ["effortField", Settings.environment.effortField],
         [document.querySelector(`input[type="radio"][name="effortFieldUnits"]`
             + `[value=${Settings.environment.effortFieldUnits}]`), true],
         ["priorityField", Settings.environment.priorityField],
         ["tagSectionPrefix", Settings.environment.tagSectionPrefix],
+        ["resourceCount", Settings.actionBar.resourceCount],
         [document.querySelector(`input[type="radio"][name="diagramType"]`
-            + `[value=${Settings.actionBar.diagramType}]`), true]
+            + `[value=${Settings.actionBar.diagramType}]`), true],
     ].forEach(([inputElementId, value]) => {
         const inputElement = typeof inputElementId === "string" || inputElementId instanceof String
             ? document.getElementById(inputElementId)

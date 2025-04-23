@@ -26,6 +26,19 @@ class AzureDevOpsClient {
         this.#projectName = projectName;
     }
 
+    async getFeatureWorkItems(featureWorkItemId) {
+        const featureWorkItems = [await this.getWorkItem(featureWorkItemId)];
+
+        const childWorkItemIds = featureWorkItems[0]
+            .relations
+            .filter(workItemRelation => workItemRelation.attributes.name === "Child")
+            .map(childWorkItem => AzureDevOpsClient.#getWorkItemIdFromUrl(childWorkItem.url));
+
+        featureWorkItems.push(...(await this.getWorkItems(childWorkItemIds)).value);
+
+        return featureWorkItems;
+    }
+
     /**
      * Get a work item by its identifier.
      * @param {number | string} workItemId Work item identifier.
@@ -46,5 +59,9 @@ class AzureDevOpsClient {
             + `&${AzureDevOpsClient.#QUERY_PARAMETERS}`
 
         return await (await fetch(workItemsUrl, { headers: this.#requestHeaders })).json();
+    }
+
+    static #getWorkItemIdFromUrl(workItemUrl) {
+        return parseInt(workItemUrl.substring(workItemUrl.lastIndexOf('/') + 1));
     }
 }

@@ -72,7 +72,7 @@ class ControlPanel {
      * @returns {number} Work item identifier.
      */
     static getWorkItemIdFromUrl(workItemUrl) {
-        return parseInt(workItemUrl.substring(workItemUrl.lastIndexOf('/') + 1), 10);
+        return parseInt(workItemUrl.substring(workItemUrl.lastIndexOf('/') + 1));
     }
 
     /**

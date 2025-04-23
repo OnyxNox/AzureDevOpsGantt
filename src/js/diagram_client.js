@@ -102,7 +102,7 @@ class DiagramClient {
 
         let lastCompletedWorkItemId = featureStartId;
         while (completedWorkItems.length < this.#dependencyGraphNodes.length) {
-            const availableResourceCount = Settings.configuration.resourceCount - scheduledWorkItems.length;
+            const availableResourceCount = Settings.actionBar.resourceCount - scheduledWorkItems.length;
 
             let readyToScheduleWorkItems = this
                 .#getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems)
