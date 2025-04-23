@@ -52,6 +52,13 @@ async function cacheSetting(section, event, value, isDropdown = false) {
         setDropdownValue(event.target, value);
     }
 
+    const cachedDiagramType = Settings.actionBar.diagramType == DiagramType.Gantt
+        ? localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY)
+        : localStorage.getItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY);
+
+    document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID)
+        .innerHTML = (await mermaid.render("updatedGraph", cachedDiagramType)).svg;
+
     clearTimeout(getFeatureWorkItemsDebounceTimer);
 
     getFeatureWorkItemsDebounceTimer = setTimeout(async () => {
@@ -83,7 +90,7 @@ async function cacheSetting(section, event, value, isDropdown = false) {
         localStorage.setItem(Constants.localStorage.DEPENDENCY_DIAGRAM_KEY, dependencyDiagram);
         localStorage.setItem(Constants.localStorage.GANTT_DIAGRAM_KEY, ganttDiagram);
 
-        const diagramType = Settings.actionBar.diagramType == DiagramType.Gantt
+        const diagramType = Settings.actionBar.diagramType === DiagramType.Gantt
             ? ganttDiagram : dependencyDiagram;
 
         document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID)
