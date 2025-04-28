@@ -1,28 +1,38 @@
 {
     "extensions": {
-        "recommendations": []
+        "recommendations": [
+            "ducfilan.pug-formatter",
+        ],
     },
     "folders": [
         {
-            "path": ".."
-        }
+            "path": "..",
+        },
     ],
     "launch": {
         "version": "0.2.0",
-        "configurations": []
+        "configurations": [],
     },
     "settings": {
         "cSpell.words": [
-            "gantt"
+            "gantt",
         ],
         "editor.formatOnSave": true,
         "editor.rulers": [
             100,
         ],
         "files.eol": "\n",
+        "files.exclude": {
+            "**/.git": true,
+            "**/.svn": true,
+            "**/.hg": true,
+            "**/.DS_Store": true,
+            "**/Thumbs.db": true,
+            "**/node_modules/": true,
+        },
     },
     "tasks": {
         "version": "2.0.0",
-        "tasks": []
-    }
+        "tasks": [],
+    },
 }

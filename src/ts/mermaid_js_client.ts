@@ -1,4 +1,25 @@
-const mermaidRenderOptions = {
+import { AzureDevOpsClient } from "./azure_dev_ops_client";
+import { DiagramType, LocalStorageKey } from "./enums";
+import { Settings } from "./settings";
+
+/**
+ * Mermaid render options.
+ */
+const mermaidRenderOptions: {
+    flowchart: { useMaxWidth: boolean },
+    gantt: {
+        barGap: number,
+        barHeight: number,
+        fontSize: number,
+        leftPadding: number,
+        rightPadding: number,
+        sectionFontSize: number,
+        useWidth: number,
+    },
+    securityLevel: string,
+    startOnLoad: boolean,
+    theme: string,
+} = {
     flowchart: { useMaxWidth: true },
     gantt: {
         barGap: 6,
@@ -22,59 +43,73 @@ window.addEventListener("resize", async () => {
 
     mermaid.initialize(mermaidRenderOptions);
 
-    if (Settings.actionBar.diagramType === DiagramType.Gantt) {
-        const ganttDiagram = localStorage.getItem(Constants.localStorage.GANTT_DIAGRAM_KEY);
+    if (Settings.userInterface.diagramType === DiagramType.Gantt) {
+        const ganttDiagram = localStorage.getItem(LocalStorageKey.GanttDiagram);
 
-        document.getElementById(Constants.userInterface.MERMAID_DIAGRAM_OUTPUT_ELEMENT_ID)
-            .innerHTML = (await mermaid.render("updatedGraph", ganttDiagram)).svg;
+        document.getElementById("mermaidDiagramOutput")!.innerHTML =
+            (await mermaid.render("updatedGraph", ganttDiagram!)).svg;
     }
 });
 
 /**
  * Client used to generate Mermaid JS diagrams.
  */
-class DiagramClient {
-    #dependencyGraphNodes = [];
+export class MermaidJsClient {
+    private dependencyGraphNodes: { workItem: any, parentWorkItems: any[] }[] = [];
 
     /**
-     * Initialize a new instance of the {@link DiagramClient}.
-     * @param {Object[]} workItems Azure DevOps work items to be graphed.
+     * Initialize a new instance of the {@link MermaidJsClient}.
+     * @param workItems Azure DevOps work items to be graphed.
      */
-    constructor(workItems) {
+    constructor(workItems: any[]) {
         workItems.forEach(workItem => {
-            let parentWorkItems = workItem
+            const parentWorkItems = workItem
                 .relations
-                .filter(workItemRelation =>
+                .filter((workItemRelation: any) =>
                     workItemRelation.attributes.name === Settings.environment.dependencyRelation)
-                .map(dependencyWorkItemRelation =>
-                    ControlPanel.getWorkItemIdFromUrl(dependencyWorkItemRelation.url))
-                .map(dependencyWorkItemId => workItems
-                    .find(workItem => workItem.id === dependencyWorkItemId));
+                .map((dependencyWorkItemRelation: any) =>
+                    AzureDevOpsClient.getWorkItemIdFromUrl(dependencyWorkItemRelation.url))
+                .map((dependencyWorkItemId: number) =>
+                    workItems.find((workItem: any) => workItem.id === dependencyWorkItemId));
 
-            workItem.fields[Settings.environment.effortField] = workItem.fields[Settings.environment.effortField]
-                ?? Constants.azure_dev_ops.WORK_ITEM_DEFAULT_EFFORT;
+            workItem.fields[Settings.environment.effortField] = isNaN(workItem.fields[Settings.environment.effortField])
+                ? Settings.userInterface.defaultEffort
+                : workItem.fields[Settings.environment.effortField];
 
-            this.#dependencyGraphNodes.push({ workItem, parentWorkItems });
+            this.dependencyGraphNodes.push({ workItem, parentWorkItems });
         });
+    }
+
+    static async renderDiagramFromLocalStorage() {
+        const localStorageDiagram = Settings.userInterface.diagramType === DiagramType.Gantt
+            ? localStorage.getItem(LocalStorageKey.GanttDiagram)
+            : localStorage.getItem(LocalStorageKey.DependencyDiagram);
+
+        if (!localStorageDiagram) {
+            return;
+        }
+
+        document.getElementById("mermaidDiagramOutput")!
+            .innerHTML = (await mermaid.render("updatedGraph", localStorageDiagram!)).svg;
     }
 
     /**
      * Get Mermaid JS flowchart showing dependencies hierarchy for the Azure DevOps work items.
      * @returns Mermaid JS flowchart showing a dependency hierarchy diagram.
      */
-    getDependencyDiagram() {
+    getDependencyDiagram(): string {
         let dependencyDiagram = "flowchart TD\n";
 
-        dependencyDiagram += this.#dependencyGraphNodes
+        dependencyDiagram += this.dependencyGraphNodes
             .map(node => {
-                const workItemTitle = DiagramClient.#sanitizeMermaidTitle(
-                    node.workItem.fields[Constants.azure_dev_ops.WORK_ITEM_TITLE_FIELD]);
+                const workItemTitle = MermaidJsClient.sanitizeMermaidTitle(
+                    node.workItem.fields["System.Title"]);
 
                 return `    ${node.workItem.id}[${workItemTitle}]`;
             })
             .join('\n');
 
-        dependencyDiagram += '\n' + this.#dependencyGraphNodes
+        dependencyDiagram += '\n' + this.dependencyGraphNodes
             .flatMap(node => node.parentWorkItems.map(parentWorkItem =>
                 `    ${parentWorkItem.id} --> ${node.workItem.id}`))
             .join('\n');
@@ -84,39 +119,39 @@ class DiagramClient {
 
     /**
      * Get Mermaid JS gantt chart showing a schedule for the Azure DevOps work items.
-     * @param {Date} featureStartDate Start date of the Azure DevOps feature.
+     * @param featureStartDate Start date of the Azure DevOps feature.
      * @returns Mermaid JS gantt chart showing a schedule diagram.
      */
-    getGanttDiagram(featureStartDate) {
+    getGanttDiagram(featureStartDate: Date): string {
         const defaultWorkItemSection = "Default";
         const featureStartId = "featureStart";
 
-        let completedWorkItems = [];
-        let scheduledWorkItems = [];
-        let ganttLines = new Map();
+        const completedWorkItems: any[] = [];
+        let scheduledWorkItems: any[] = [];
+        const ganttLines = new Map<string, string[]>();
 
         ganttLines.set(
-            Constants.azure_dev_ops.MILESTONE_SECTION_TAG,
+            "Milestone",
             [`Feature Start : milestone, ${featureStartId}`
-                + `, ${DiagramClient.#getDateString(new Date(featureStartDate))}, 1d`]);
+                + `, ${MermaidJsClient.getDateString(new Date(featureStartDate))}, 1d`]);
 
         let lastCompletedWorkItemId = featureStartId;
-        while (completedWorkItems.length < this.#dependencyGraphNodes.length) {
-            const availableResourceCount = Settings.actionBar.resourceCount - scheduledWorkItems.length;
+        while (completedWorkItems.length < this.dependencyGraphNodes.length) {
+            const availableResourceCount = Settings.userInterface.resourceCount - scheduledWorkItems.length;
 
-            let readyToScheduleWorkItems = this
-                .#getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems)
+            const readyToScheduleWorkItems = this
+                .getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems)
                 .slice(0, availableResourceCount);
 
             readyToScheduleWorkItems.forEach(workItem => {
-                const workItemSection = DiagramClient.#sanitizeMermaidTitle(workItem
-                    .fields[Constants.azure_dev_ops.WORK_ITEM_TAGS_FIELD]
+                const workItemSection = MermaidJsClient.sanitizeMermaidTitle(workItem
+                    .fields["System.Tags"]
                     ?.split(';')
-                    .find(tag => tag.startsWith(Settings.environment.tagSectionPrefix))
+                    .find((tag: string) => tag.startsWith(Settings.environment.tagSectionPrefix))
                     ?.replace(Settings.environment.tagSectionPrefix, '')
                     ?? defaultWorkItemSection);
-                const workItemTitle = DiagramClient.#sanitizeMermaidTitle(
-                    workItem.fields[Constants.azure_dev_ops.WORK_ITEM_TITLE_FIELD]);
+                const workItemTitle = MermaidJsClient.sanitizeMermaidTitle(
+                    workItem.fields["System.Title"]);
 
                 const sectionGanttLines = ganttLines.get(workItemSection) ?? [];
 
@@ -150,9 +185,9 @@ class DiagramClient {
             "gantt\n    dateFormat YYYY-MM-DD\n    excludes weekends\n    todayMarker off\n";
 
         ganttDiagram += Array.from(ganttLines.entries())
-            .sort(([sectionTitleA, _sectionLinesA], [sectionTitleB, _sectionLinesB]) => {
-                if (sectionTitleA === Constants.azure_dev_ops.MILESTONE_SECTION_TAG) return -1;
-                if (sectionTitleB === Constants.azure_dev_ops.MILESTONE_SECTION_TAG) return 1;
+            .sort(([sectionTitleA], [sectionTitleB]) => {
+                if (sectionTitleA === "Milestone") return -1;
+                if (sectionTitleB === "Milestone") return 1;
 
                 if (sectionTitleA === defaultWorkItemSection) return 1;
                 if (sectionTitleB === defaultWorkItemSection) return -1;
@@ -169,10 +204,10 @@ class DiagramClient {
 
     /**
      * Get date string from a Date in the format of 'YYYY-MM-DD'.
-     * @param {Date} date Input date.
-     * @returns {string} Date string in the format of 'YYYY-MM-DD'.
+     * @param date Input date.
+     * @returns Date string in the format of 'YYYY-MM-DD'.
      */
-    static #getDateString(date) {
+    private static getDateString(date: Date): string {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
@@ -181,16 +216,14 @@ class DiagramClient {
     }
 
     /**
-     * Get collection of Azure DevOps work items that are ready to be scheduled. Work items are
-     * ordered by priority ascending (1..n) then effort descending (n..1).
-     * @param {Object[]} scheduledWorkItems Azure DevOps work items that have already been
-     * scheduled.
-     * @param {Object[]} completedWorkItems Azure DevOps work items that have already been scheduled
-     * then completed by a resource.
+     * Get collection of Azure DevOps work items that are ready to be scheduled.
+     * Work items are ordered by priority ascending (1..n) then effort descending (n..1).
+     * @param scheduledWorkItems Azure DevOps work items that have already been scheduled.
+     * @param completedWorkItems Azure DevOps work items that have already been completed.
      * @returns Collection of Azure DevOps work items that are ready to be scheduled.
      */
-    #getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems) {
-        return this.#dependencyGraphNodes
+    private getReadyToScheduleWorkItems(scheduledWorkItems: any[], completedWorkItems: any[]): any[] {
+        return this.dependencyGraphNodes
             .filter(node => !(scheduledWorkItems.includes(node.workItem)
                 || completedWorkItems.includes(node.workItem)))
             .filter(node => node.parentWorkItems.every(parentWorkItem =>
@@ -208,11 +241,10 @@ class DiagramClient {
 
     /**
      * Get a valid Mermaid JS diagram node title.
-     * @param {string} title Title to be sanitized.
-     * @returns Valid Mermaid JS diagram node title, where all non-alphanumeric characters are
-     * replaced with their HTML ASCII character codes.
+     * @param title Title to be sanitized.
+     * @returns Valid Mermaid JS diagram node title.
      */
-    static #sanitizeMermaidTitle(title) {
+    private static sanitizeMermaidTitle(title: string): string {
         return title.replace(/[^a-zA-Z0-9 ]/g, (char) => `#${char.charCodeAt(0)};`);
     }
 }

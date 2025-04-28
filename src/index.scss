@@ -1,3 +1,7 @@
+@use "./scss/control_panel";
+@use "./scss/dropdown";
+@use "./scss/gantt";
+
 :root {
     /* Control Panel Variables */
     --control-panel-background-color: rgb(23, 23, 23);

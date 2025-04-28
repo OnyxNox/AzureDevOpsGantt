@@ -15,7 +15,7 @@ This guide assumes that you already have access to an Azure DevOps organization,
 
 1. Create a dependency hierarchy using the Azure DevOps Related Work Links, placing the dependency link type on child work items. By default the dependency link type is _Tests_ but is configurable in the tool. If you are unsure of how to assign work item links, please see the [Azure DevOps Work Item Links](https://learn.microsoft.com/en-us/azure/devops/boards/backlogs/add-link#link-a-work-item-to-another-work-item) doc. See also the [Configuration Options](#configuration-options) section _Dependency Relation_ setting for an example.
 1. Create a new Personal Access Token with a _Work Items (Read)_ scope. If you do not know how to create a Personal Access Token, please see the [Azure DevOps Create a PAT](https://learn.microsoft.com/en-us/azure/devops/organizations/accounts/use-personal-access-tokens-to-authenticate#create-a-pat) doc.
-1. Navigate to this repository's [GitHub Pages](https://onyxnox.github.io/AzureDevOpsGantt/) (recommended) or download the repository and open the [`./src/index.html`](./src/index.html) file in a web browser.
+1. Navigate to this repository's [GitHub Pages](https://onyxnox.github.io/AzureDevOpsGantt/).
 1. If you have never visited the tool, the _Control Panel_ will be automatically opened, enter the context details and update any default settings to fit your Azure DevOps environment.
 1. Click on the _Generate_ button at the bottom of the _Control Panel_.
 
@@ -117,5 +117,5 @@ effort descending. Parallel task execution is restricted by the defined _Resourc
 
 - Update the [GitHub Pages](https://onyxnox.github.io/AzureDevOpsGantt/) tool to latest `master`.
     ```shell
-    git subtree push --prefix src origin gh-pages
+    git subtree push --prefix dist origin gh-pages
     ```

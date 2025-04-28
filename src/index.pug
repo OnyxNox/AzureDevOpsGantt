@@ -1,0 +1,87 @@
+doctype html
+html(lang="en")
+    head
+        meta(charset="UTF-8")
+        meta(name="viewport" content="width=device-width, initial-scale=1.0")
+        title Azure DevOps Gantt (A-DOG)
+        link(href="./index.css" rel="stylesheet")
+
+    body
+        #controlPanel
+            input#controlPanelToggle(type="checkbox")
+            label#controlPanelToggleLabel(for="controlPanelToggle")
+                #hamburgerWrapper
+                    #hamburger
+
+            #controlPanelContent
+                h1 Control Panel
+                h2 Authentication
+                .formControl
+                    label(for="userEmail") User Email
+                    input#userEmail(type="email" name="userEmail" oninput="updateSetting('authentication', event)" required)
+                .formControl
+                    label(for="personalAccessToken") Personal Access Token
+                    input#personalAccessToken(type="password" name="personalAccessToken" oninput="updateSetting('authentication', event)" required)
+                .formControl
+                    input#cacheCredentials(type="checkbox" name="cacheCredentials" oninput="updateSetting('authentication', event)")
+                    label(for="cacheCredentials") Cache Credentials
+
+                h2 Context
+                .formControl
+                    label(for="organizationName") Organization Name
+                    input#organizationName(type="text" name="organizationName" oninput="updateSetting('context', event)" required)
+                .formControl
+                    label(for="projectName") Project Name
+                    input#projectName(type="text" name="projectName" oninput="updateSetting('context', event)" required)
+                .formControl
+                    label(for="featureWorkItemId") Feature Work Item ID
+                    input#featureWorkItemId(type="text" name="featureWorkItemId" oninput="updateSetting('context', event)" required)
+
+                h2 Configuration 
+                .formControl
+                    label(for="resourceCount") Resource Count
+                    input#resourceCount(type="number" name="resourceCount" min="1" max="100" onchange="updateSetting('userInterface', event)" required)
+
+                h2 Environment
+                .formControl
+                    label(for="dependencyRelation") Dependency Relation
+                    input#dependencyRelation(type="text" name="dependencyRelation" oninput="updateSetting('environment', event)" required)
+                .formControl
+                    label(for="effortField") Effort Field
+                    input#effortField(type="text" name="effortField" oninput="updateSetting('environment', event)" required)
+                .formControl
+                    label(for="effortFieldUnits") Effort Field Units
+                    #effortFieldUnitsDropdown.dropdown
+                        label
+                            input(type="checkbox")
+                            | Effort Unit
+
+                        .dropdownContent
+                            label
+                                input(type="radio" name="effortFieldUnits" value="d" onchange="updateSetting('environment', event)")
+                                | Days
+                            label
+                                input(type="radio" name="effortFieldUnits" value="w" onchange="updateSetting('environment', event)")
+                                | Weeks
+                .formControl
+                    label(for="priorityField") Priority Field
+                    input#priorityField(type="text" name="priorityField" oninput="updateSetting('environment', event)" required)
+                .formControl
+                    label(for="tagSectionPrefix") Tag Section Prefix
+                    input#tagSectionPrefix(type="text" name="tagSectionPrefix" oninput="updateSetting('environment', event)" required)
+
+        #actionBar
+            .buttonRadioGroup
+                label
+                    input(type="radio" name="diagramType" value="dependency" onchange="updateSetting('userInterface', event)")
+                    | Dependency
+                label
+                    input(type="radio" name="diagramType" value="gantt" onchange="updateSetting('userInterface', event)")
+                    | Gantt
+
+        #mermaidDiagramOutput
+        #loadingOverlay
+
+        script(src="https://cdn.jsdelivr.net/npm/requirejs@2.3.7/require.min.js")
+        script(src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js" integrity="sha256-OpMBanPcgrqJDZGfm7sXbz2p2YNBZQwLUX8llcxo/vg=" crossorigin="anonymous")
+        script(src="./index.js")

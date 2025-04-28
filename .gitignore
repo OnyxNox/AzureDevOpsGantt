@@ -1,2 +1,8 @@
 # Generic ignore
 *.ignore.*
+
+# Compiled CSS, HTML and JavaScript files
+dist/
+
+# Node Package Manager libraries directory
+/node_modules
