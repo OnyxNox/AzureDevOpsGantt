@@ -1,0 +1,109 @@
+@use "./globals.sass" as *
+
+$controlPanelBackgroundColor: rgb(23, 23, 23)
+$controlPanelBorderColor: rgb(43, 43, 43)
+$controlPanelBorderWidth: 1px
+$controlPanelMinWidth: 388px
+$controlPanelPadding: 13px
+
+$sectionPadding: 3px
+
+// Control panel wrapper
+#controlPanel
+    background-color: $controlPanelBackgroundColor
+    border-left: $controlPanelBorderWidth solid $controlPanelBorderColor
+    height: 100%
+    min-width: $controlPanelMinWidth
+    padding: $controlPanelPadding
+
+    // Control panel section headers
+    &>h2
+        font-variant: small-caps
+
+        &:first-child
+            padding-top: 0
+
+        // Control panel section header labels
+        &>label
+            cursor: pointer
+            display: block
+            padding: $sectionPadding 0
+            padding-right: $controlPanelPadding * 2
+
+            // Control panel section header expanded state identifiers
+            &:before
+                content: "+"
+                display: block
+                position: absolute
+                right: $controlPanelPadding
+
+            // Control panel section header collapsed state identifiers
+            &:has(input[type="checkbox"]:checked):before
+                content: "-"
+
+            // Control panel section header checkboxes used to track header's collapsed state
+            &>input[type="checkbox"]
+                display: none
+
+            // Control panel section header's hover state
+            &:hover
+                color: white
+
+        // Control panel sections
+        &+section
+            display: none
+
+        // Control panel section's expanded state
+        &:has(label>input[type="checkbox"]:checked)+section
+            display: block
+
+        // Control panel section's header divider
+        &:has(label>input[type="checkbox"]:checked)
+            border-bottom: $controlPanelBorderWidth solid $pageForegroundColor
+            margin-bottom: $sectionPadding
+
+    &>section>.controlGroup
+        display: flex
+        flex-direction: column
+        margin-bottom: $sectionPadding
+
+        &>label
+            font-variant: small-caps
+
+        &>input
+            background-color: $controlBackgroundColor
+            border: $controlBorderWidth solid $controlBorderColor
+            border-radius: $controlBorderRadius
+            color: $pageForegroundColor
+            outline: none
+            padding: $controlPadding
+            width: 100%
+
+            &[type="checkbox"]
+                display: none
+
+                &+label
+                    cursor: pointer
+                    position: relative
+
+                    &:before
+                        background-color: $controlBackgroundColor
+                        border: $controlBorderWidth solid $controlBorderColor
+                        border-radius: $controlBorderRadius
+                        content: ""
+                        display: inline-block
+                        height: 22px
+                        margin-right: 6px
+                        vertical-align: text-top
+                        width: 22px
+
+                &:checked+label:after
+                    background-color: $pageForegroundColor
+                    box-shadow: 2px 0 0 $pageForegroundColor, 4px 0 0 $pageForegroundColor, 4px -2px 0 $pageForegroundColor, 4px -4px 0 $pageForegroundColor, 4px -6px 0 $pageForegroundColor, 4px -8px 0 $pageForegroundColor
+                    content: ""
+                    height: 2px
+                    position: absolute
+                    left: 6px
+                    top: 10px
+                    transform: rotate(45deg)
+                    width: 2px

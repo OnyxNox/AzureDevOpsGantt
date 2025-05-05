@@ -1,0 +1,68 @@
+mixin controlPanel()
+    #controlPanel
+        +section("Authentication")
+            +controlGroup("userEmail", "User Email")
+                input#userEmail(type="email" name="userEmail" oninput="updateSetting('authentication', event)" required=true)
+            +controlGroup("personalAccessToken", "Personal Access Token")
+                input#personalAccessToken(type="password" name="personalAccessToken" oninput="updateSetting('authentication', event)" required=true)
+            .controlGroup
+                input#cacheCredentials(type="checkbox" name="cacheCredentials" oninput="updateSetting('authentication', event)")
+                label.my-2(for="cacheCredentials") Cache Credentials
+
+        +section("Context")
+            +controlGroup("organizationName", "Organization Name")
+                input#organizationName(type="text" name="organizationName" oninput="updateSetting('context', event)" required=true)
+            +controlGroup("projectName", "Project Name")
+                input#projectName(type="text" name="projectName" oninput="updateSetting('context', event)" required=true)
+            +controlGroup("featureWorkItemId", "Feature Work Item ID")
+                input#featureWorkItemId(type="text" name="featureWorkItemId" oninput="updateSetting('context', event)" required=true)
+
+        +section("Environment")
+            +controlGroup("dependencyRelation", "Dependency Relation")
+                input#dependencyRelation(type="text" name="dependencyRelation" oninput="updateSetting('environment', event)")
+            +controlGroup("effortField", "Effort Field")
+                input#effortField(type="text" name="effortField" oninput="updateSetting('environment', event)")
+            +controlGroup("effortFieldUnits", "Effort Field Units")
+                .buttonRadioGroup
+                    label
+                        input(type="radio" name="effortFieldUnits" value="h" onchange="updateSetting('environment', event)" disabled=true)
+                        | Hours
+                    label
+                        input(type="radio" name="effortFieldUnits" value="d" onchange="updateSetting('environment', event)")
+                        | Days
+                    label
+                        input(type="radio" name="effortFieldUnits" value="w" onchange="updateSetting('environment', event)")
+                        | Weeks
+            +controlGroup("priorityField", "Priority Field")
+                input#priorityField(type="text" name="priorityField" oninput="updateSetting('environment', event)")
+            +controlGroup("tagSectionPrefix", "Tag Section Prefix")
+                input#tagSectionPrefix(type="text" name="tagSectionPrefix" oninput="updateSetting('environment', event)")
+
+        +section("Configuration")
+            +controlGroup("asOf", "As Of")
+                input#asOf(type="datetime" name="asOf" oninput="updateSetting('userInterface', event)")
+            +controlGroup("diagramType", "Diagram Type")
+                .buttonRadioGroup
+                    label
+                        input(type="radio" name="diagramType" value="dependency" onchange="updateSetting('userInterface', event)")
+                        | Dependency
+                    label
+                        input(type="radio" name="diagramType" value="gantt" onchange="updateSetting('userInterface', event)")
+                        | Gantt
+            +controlGroup("resourceCount", "Resource Count")
+                input#resourceCount(type="number" name="resourceCount" min="1" max="100" onchange="updateSetting('userInterface', event)")
+            +controlGroup("defaultEffort", "Default Effort")
+                input#defaultEffort(type="number" name="defaultEffort" min="0" max="100" onchange="updateSetting('userInterface', event)")
+
+mixin controlGroup(forId, label)
+    .controlGroup
+        label.my-2(for={forId}) #{label}
+        block
+
+mixin section(title)
+    h2
+        label
+            input(type="checkbox" value=title)
+            | #{title}
+    section
+        block

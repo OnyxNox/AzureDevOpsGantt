@@ -1,0 +1,60 @@
+@use "./sass/control_panel.sass"
+@use "./sass/gantt.sass"
+@use "./sass/globals.sass" as *
+@use "./sass/spacing.sass"
+
+*,
+*:before,
+*:after
+    box-sizing: border-box
+    margin: 0
+    padding: 0
+
+*:not(input)
+    user-select: none
+
+html
+    font-size: 16px
+
+html, body
+    background-color: $pageBackgroundColor
+    color: $pageForegroundColor
+    display: flex
+    font-family: "trebuchet ms", verdana, arial, sans-serif
+    font-size: 1.06rem
+    height: 100%
+    width: 100%
+
+.buttonRadioGroup
+    display: flex
+    flex-direction: row
+
+    &>label
+        background-color: $controlBackgroundColor
+        cursor: pointer
+        flex-grow: 1
+        padding: $controlPadding
+        text-align: center
+        width: 50%
+
+        &:first-child
+            border-radius: $controlBorderRadius 0 0 $controlBorderRadius
+
+        &:last-child
+            border-radius: 0 $controlBorderRadius $controlBorderRadius 0
+
+        &:has(input[type="radio"]:checked)
+            background-color: $colorPrimary
+
+        &:has(input[type="radio"]:disabled)
+            background-color: $controlBackgroundDisabledColor
+            color: $colorDisabled
+            cursor: default
+
+        &>input[type="radio"]
+            display: none
+
+#mermaidJsDiagramOutput
+    align-self: center
+    flex-grow: 1
+    justify-items: center

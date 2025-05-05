@@ -33,17 +33,17 @@ export enum EffortUnit {
  */
 export enum LocalStorageKey {
     /**
-     * Local storage key used to store the dependency hierarchy diagram.
+     * Dependency hierarchy diagram local storage key.
      */
     DependencyDiagram = "dependencyDiagram",
 
     /**
-     * Local storage key used to store the schedule diagram.
+     * Schedule diagram local storage key.
      */
     GanttDiagram = "ganttDiagram",
 
     /**
-     * Local storage key used to store the session's settings.
+     * Session settings local storage key.
      */
     Settings = "settings",
 }

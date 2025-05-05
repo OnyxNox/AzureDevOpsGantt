@@ -1,3 +1,5 @@
+import { Settings } from "./settings";
+
 /**
  * HTTP client used to interface with Azure DevOps APIs.
  */
@@ -8,12 +10,17 @@ export class AzureDevOpsClient {
     private static readonly API_VERSION: string = "api-version=7.1";
 
     /**
-     * Azure DevOps REST API base URL used in all requests.
+     * Azure DevOps base URL.
      */
-    private baseUrl: string;
+    private static readonly ADO_BASE_URL: string = "https://dev.azure.com";
 
     /**
-     * Azure DevOps REST API authorization headers used in all requests.
+     * Visual Studio Shared Platform Services (VSSPS) base URL.
+     */
+    private static readonly VSSPS_BASE_URL: string = "https://app.vssps.visualstudio.com";
+
+    /**
+     * Azure DevOps REST API headers used in all requests.
      */
     private requestHeaders: Record<string, string>;
 
@@ -21,17 +28,8 @@ export class AzureDevOpsClient {
      * Initialize a new instance of the {@link AzureDevOpsClient}.
      * @param userEmail Azure DevOps user email address used to authenticate requests.
      * @param personalAccessToken Personal access token used to authenticate requests.
-     * @param organizationName Azure DevOps organization that work items are under.
-     * @param projectName Azure DevOps organization's project that work items are under.
      */
-    constructor(
-        userEmail: string,
-        personalAccessToken: string,
-        organizationName: string,
-        projectName: string,
-    ) {
-        this.baseUrl = `https://dev.azure.com/${organizationName}/${projectName}`;
-
+    constructor(userEmail: string, personalAccessToken: string) {
         this.requestHeaders = {
             "Accept": "application/json",
             "Authorization": `Basic ${btoa(`${userEmail}:${personalAccessToken}`)}`,
@@ -72,6 +70,40 @@ export class AzureDevOpsClient {
     }
 
     /**
+     * Get a collection of Azure DevOps organizations the authenticated user has access to.
+     * @param memberId Azure DevOps profile identifier.
+     * @returns Azure DevOps organizations.
+     */
+    async getOrganizations(memberId: string): Promise<any> {
+        const organizationsUrl = `${AzureDevOpsClient.VSSPS_BASE_URL}/_apis/accounts`
+            + `?memberId=${memberId}&${AzureDevOpsClient.API_VERSION}`;
+
+        return await this.fetchJson(organizationsUrl);
+    }
+
+    /**
+     * Get the authenticated user's Azure DevOps profile.
+     * @returns Azure DevOps profile.
+     */
+    async getProfile(): Promise<any> {
+        const profileUrl = `${AzureDevOpsClient.VSSPS_BASE_URL}/_apis/profile/profiles/me`
+            + `?${AzureDevOpsClient.API_VERSION}`;
+
+        return await this.fetchJson(profileUrl);
+    }
+
+    /**
+     * Get a collection of projects under the organization.
+     * @returns Azure DevOps projects.
+     */
+    async getProjects(): Promise<any> {
+        const projectsUrl = `${AzureDevOpsClient.ADO_BASE_URL}/${Settings.context.organizationName}`
+            + `/_apis/projects?${AzureDevOpsClient.API_VERSION}`;
+
+        return await this.fetchJson(projectsUrl);
+    }
+
+    /**
      * Get a work item by its identifier.
      * @param workItemId Work item identifier.
      * @returns Azure DevOps work item.
@@ -86,10 +118,14 @@ export class AzureDevOpsClient {
      * @returns Azure DevOps work items.
      */
     async getWorkItems(workItemIds: (number | string)[]): Promise<any> {
-        const workItemsUrl: string = `${this.baseUrl}/_apis/wit/workitems`
-            + `?ids=${workItemIds.join(',')}&$expand=relations&${AzureDevOpsClient.API_VERSION}`;
+        const workItemsUrl = `${AzureDevOpsClient.ADO_BASE_URL}`
+            + `/${Settings.context.organizationName}/${Settings.context.projectName}/_apis/wit`
+            + `/workitems?ids=${workItemIds.join(',')}&$expand=relations`
+            + `&${AzureDevOpsClient.API_VERSION}`;
 
-        return await this.fetchJson(workItemsUrl);
+        const workItems = await this.fetchJson(workItemsUrl);
+
+        return workItems;
     }
 
     /**
@@ -97,8 +133,9 @@ export class AzureDevOpsClient {
      * @returns Azure DevOps work item types.
      */
     async getWorkItemTypes(): Promise<any> {
-        const workItemTypesUrl: string = `${this.baseUrl}/_apis/wit/workitemtypes`
-            + `?${AzureDevOpsClient.API_VERSION}`;
+        const workItemTypesUrl = `${AzureDevOpsClient.ADO_BASE_URL}`
+            + `/${Settings.context.organizationName}/${Settings.context.projectName}/_apis/wit`
+            + `/workitemtypes?${AzureDevOpsClient.API_VERSION}`;
 
         return await this.fetchJson(workItemTypesUrl);
     }
@@ -109,8 +146,9 @@ export class AzureDevOpsClient {
      * @returns Azure DevOps work item type states.
      */
     async getWorkItemTypeStates(workItemType: string) {
-        const workItemTypesUrl: string = `${this.baseUrl}/_apis/wit/workitemtypes/${workItemType}`
-            + `/states?${AzureDevOpsClient.API_VERSION}`;
+        const workItemTypesUrl = `${AzureDevOpsClient.ADO_BASE_URL}`
+            + `/${Settings.context.organizationName}/${Settings.context.projectName}/_apis/wit`
+            + `/workitemtypes/${workItemType}/states?${AzureDevOpsClient.API_VERSION}`;
 
         return await this.fetchJson(workItemTypesUrl);
     }

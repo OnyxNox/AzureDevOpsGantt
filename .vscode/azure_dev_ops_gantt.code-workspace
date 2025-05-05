@@ -2,6 +2,8 @@
     "extensions": {
         "recommendations": [
             "ducfilan.pug-formatter",
+            "ritwickdey.liveserver",
+            "syler.sass-indented",
         ],
     },
     "folders": [
@@ -16,6 +18,7 @@
     "settings": {
         "cSpell.words": [
             "gantt",
+            "nowrap"
         ],
         "editor.formatOnSave": true,
         "editor.rulers": [
@@ -30,9 +33,51 @@
             "**/Thumbs.db": true,
             "**/node_modules/": true,
         },
+        "liveServer.settings.port": 5479,
+        "liveServer.settings.root": "./dist/",
     },
     "tasks": {
         "version": "2.0.0",
-        "tasks": [],
+        "tasks": [
+            {
+                "label": "Watch Pug",
+                "type": "shell",
+                "command": "npm run watch:pug",
+                "problemMatcher": [],
+                "presentation": {
+                    "group": "watch",
+                    "panel": "shared"
+                }
+            },
+            {
+                "label": "Watch SASS",
+                "type": "shell",
+                "command": "npm run watch:sass",
+                "problemMatcher": [],
+                "presentation": {
+                    "group": "watch",
+                    "panel": "shared"
+                }
+            },
+            {
+                "label": "Watch TypeScript",
+                "type": "shell",
+                "command": "npm run watch:ts",
+                "problemMatcher": [],
+                "presentation": {
+                    "group": "watch",
+                    "panel": "shared"
+                }
+            },
+            {
+                "label": "Watch All",
+                "dependsOn": [
+                    "Watch Pug",
+                    "Watch SASS",
+                    "Watch TypeScript"
+                ],
+                "problemMatcher": [],
+            },
+        ],
     },
 }

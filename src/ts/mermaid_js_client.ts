@@ -1,25 +1,13 @@
 import { AzureDevOpsClient } from "./azure_dev_ops_client";
 import { DiagramType, LocalStorageKey } from "./enums";
+import { IMermaidJsDiagram, IMermaidJsRenderOptions } from "./interfaces";
 import { Settings } from "./settings";
+import { titleToCamelCase } from "./utility";
 
 /**
- * Mermaid render options.
+ * Mermaid JS render options.
  */
-const mermaidRenderOptions: {
-    flowchart: { useMaxWidth: boolean },
-    gantt: {
-        barGap: number,
-        barHeight: number,
-        fontSize: number,
-        leftPadding: number,
-        rightPadding: number,
-        sectionFontSize: number,
-        useWidth: number,
-    },
-    securityLevel: string,
-    startOnLoad: boolean,
-    theme: string,
-} = {
+const mermaidJsRenderOptions: IMermaidJsRenderOptions = {
     flowchart: { useMaxWidth: true },
     gantt: {
         barGap: 6,
@@ -35,18 +23,18 @@ const mermaidRenderOptions: {
     theme: "dark",
 };
 
-mermaid.initialize(mermaidRenderOptions);
+mermaid.initialize(mermaidJsRenderOptions);
 
 window.addEventListener("resize", async () => {
     // `useMaxWidth` is a base diagram option but it doesn't work on the gantt diagram type.
-    mermaidRenderOptions.gantt.useWidth = window.innerWidth;
+    mermaidJsRenderOptions.gantt.useWidth = window.innerWidth;
 
-    mermaid.initialize(mermaidRenderOptions);
+    mermaid.initialize(mermaidJsRenderOptions);
 
     if (Settings.userInterface.diagramType === DiagramType.Gantt) {
         const ganttDiagram = localStorage.getItem(LocalStorageKey.GanttDiagram);
 
-        document.getElementById("mermaidDiagramOutput")!.innerHTML =
+        document.getElementById("mermaidJsDiagramOutput")!.innerHTML =
             (await mermaid.render("updatedGraph", ganttDiagram!)).svg;
     }
 });
@@ -89,7 +77,7 @@ export class MermaidJsClient {
             return;
         }
 
-        document.getElementById("mermaidDiagramOutput")!
+        document.getElementById("mermaidJsDiagramOutput")!
             .innerHTML = (await mermaid.render("updatedGraph", localStorageDiagram!)).svg;
     }
 
@@ -122,7 +110,7 @@ export class MermaidJsClient {
      * @param featureStartDate Start date of the Azure DevOps feature.
      * @returns Mermaid JS gantt chart showing a schedule diagram.
      */
-    getGanttDiagram(featureStartDate: Date): string {
+    async getGanttDiagram(featureStartDate: Date, workItemStates: any[]): Promise<IMermaidJsDiagram> {
         const defaultWorkItemSection = "Default";
         const featureStartId = "featureStart";
 
@@ -132,7 +120,7 @@ export class MermaidJsClient {
 
         ganttLines.set(
             "Milestone",
-            [`Feature Start : milestone, ${featureStartId}`
+            [`Feature Start : milestone, id-${featureStartId}`
                 + `, ${MermaidJsClient.getDateString(new Date(featureStartDate))}, 1d`]);
 
         let lastCompletedWorkItemId = featureStartId;
@@ -155,8 +143,8 @@ export class MermaidJsClient {
 
                 const sectionGanttLines = ganttLines.get(workItemSection) ?? [];
 
-                sectionGanttLines.push(`${workItemTitle} : ${workItem.id}`
-                    + `, after ${lastCompletedWorkItemId}`
+                sectionGanttLines.push(`${workItemTitle} : id-${workItem.id}`
+                    + `, after id-${lastCompletedWorkItemId}`
                     + `, ${workItem.fields[Settings.environment.effortField]}${Settings.environment.effortFieldUnits}`);
 
                 ganttLines.set(workItemSection, sectionGanttLines);
@@ -199,7 +187,19 @@ export class MermaidJsClient {
                 [`    Section ${key}`].concat(value.map(line => `        ${line}`)))
             .join('\n');
 
-        return ganttDiagram;
+        const svg = await MermaidJsClient.renderDiagramSvg("ganttDiagram", ganttDiagram);
+
+        workItemStates.forEach(workItemState => {
+            svg.querySelector("style")!.textContent += `.workItemState-${titleToCamelCase(workItemState.name)} { fill: #${workItemState.color} !important; stroke: #${workItemState.color} !important; }`;
+        });
+
+        this.dependencyGraphNodes.forEach(node => {
+            svg.querySelector(`g>rect#id-${node.workItem.id}`)
+                ?.classList
+                .add("workItemState-" + titleToCamelCase(node.workItem.fields["System.State"]));
+        });
+
+        return { raw: ganttDiagram, svg };
     }
 
     /**
@@ -246,5 +246,11 @@ export class MermaidJsClient {
      */
     private static sanitizeMermaidTitle(title: string): string {
         return title.replace(/[^a-zA-Z0-9 ]/g, (char) => `#${char.charCodeAt(0)};`);
+    }
+
+    private static async renderDiagramSvg(diagramId: string, diagram: string): Promise<HTMLElement> {
+        return new DOMParser()
+            .parseFromString((await mermaid.render(diagramId, diagram)).svg, "image/svg+xml")
+            .documentElement;
     }
 }

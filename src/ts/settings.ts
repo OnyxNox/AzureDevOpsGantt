@@ -1,7 +1,8 @@
 import { AzureDevOpsClient } from "./azure_dev_ops_client";
 import { DiagramType, EffortUnit, LocalStorageKey } from "./enums";
-import { IAuthenticationSettings, IContextSettings, IEnvironmentSettings, ISettings, ISubSettings, IUserInterfaceSettings } from "./interfaces";
+import { IAuthenticationSettings, IContextSettings, IEnvironmentSettings, ISettings, ISubSettings, IUserInterfaceSettings } from "./interfaces/settings_interfaces";
 import { MermaidJsClient } from "./mermaid_js_client";
+import { flattenObject } from "./utility";
 
 /**
  * Default authentication settings.
@@ -41,6 +42,7 @@ export class Settings {
     };
 
     static userInterface: IUserInterfaceSettings = {
+        asOf: "Now",
         defaultEffort: 3,
         diagramType: DiagramType.Gantt,
         resourceCount: 1,
@@ -50,8 +52,8 @@ export class Settings {
      * Initialize controls using the previous session's settings from local storage.
      */
     public static async loadSettingsFromLocalStorage() {
-        const localStorageSettings: ISettings =
-            JSON.parse(localStorage.getItem(LocalStorageKey.Settings) ?? "{}");
+        const localStorageSettings: ISettings
+            = JSON.parse(localStorage.getItem(LocalStorageKey.Settings) ?? "{}");
 
         Object.assign(
             Settings,
@@ -62,48 +64,15 @@ export class Settings {
                 userInterface: { ...Settings.userInterface, ...localStorageSettings.userInterface },
             });
 
-        [
-            ["userEmail", Settings.authentication.userEmail],
-            ["personalAccessToken", Settings.authentication.personalAccessToken],
-            ["cacheCredentials", Settings.authentication.cacheCredentials],
-            ["organizationName", Settings.context.organizationName],
-            ["projectName", Settings.context.projectName],
-            ["featureWorkItemId", Settings.context.featureWorkItemId],
-            ["dependencyRelation", Settings.environment.dependencyRelation],
-            ["effortField", Settings.environment.effortField],
-            [document.querySelector(`input[type="radio"][name="effortFieldUnits"]`
-                + `[value=${Settings.environment.effortFieldUnits}]`), true],
-            ["priorityField", Settings.environment.priorityField],
-            ["tagSectionPrefix", Settings.environment.tagSectionPrefix],
-            ["resourceCount", Settings.userInterface.resourceCount],
-            [document.querySelector(`input[type="radio"][name="diagramType"]`
-                + `[value=${Settings.userInterface.diagramType}]`), true],
-        ].forEach(([inputElementId, value]) => {
-            const inputElement = typeof inputElementId === "string" || inputElementId instanceof String
-                ? document.getElementById(inputElementId as string)
-                : inputElementId;
-
-            if (inputElement instanceof HTMLInputElement && value) {
-                if (inputElement.type === "checkbox" || inputElement.type === "radio") {
-                    inputElement.checked = value as boolean;
-
-                    const grandParentElement = inputElement.parentElement?.parentElement?.parentElement;
-                    if (grandParentElement?.classList.contains("dropdown") && value) {
-                        Settings.setDropdownValue(inputElement, inputElement.value);
-                    }
-                } else {
-                    inputElement.value = value as string;
-                }
-            }
-        });
-
-        await MermaidJsClient.renderDiagramFromLocalStorage();
+        Settings.loadSettingsIntoHtmlInputElements();
 
         Settings.azureDevOpsClient = new AzureDevOpsClient(
             Settings.authentication.userEmail,
-            Settings.authentication.personalAccessToken,
-            Settings.context.organizationName,
-            Settings.context.projectName);
+            Settings.authentication.personalAccessToken);
+
+        if (!Settings.allRequiredFieldsHaveValues()) {
+            return;
+        }
     }
 
     /**
@@ -127,16 +96,13 @@ export class Settings {
                 value = event.target.value;
         }
 
-        Settings[section] ??= {} as any;
         (Settings[section] as any)[event.target.name] = value;
-
-        await MermaidJsClient.renderDiagramFromLocalStorage();
 
         clearTimeout(Settings.getDebounceTimerId);
 
-        if (await Settings.hasInvalidContext()) {
-            return;
-        }
+        // if (await Settings.hasInvalidContext()) {
+        //     return;
+        // }
 
         Settings.getDebounceTimerId = window.setTimeout(async () => {
             localStorage.setItem(
@@ -152,25 +118,75 @@ export class Settings {
 
             const mermaidJsClient = new MermaidJsClient(childWorkItems);
 
-            const ganttDiagram = mermaidJsClient.getGanttDiagram(new Date(
-                featureWorkItem!.fields["Microsoft.VSTS.Scheduling.StartDate"]));
-
             let dependencyDiagram = mermaidJsClient.getDependencyDiagram();
 
-            localStorage.setItem(LocalStorageKey.GanttDiagram, ganttDiagram);
             localStorage.setItem(LocalStorageKey.DependencyDiagram, dependencyDiagram);
 
-            await MermaidJsClient.renderDiagramFromLocalStorage();
+            const workItemStates = (await Settings.azureDevOpsClient
+                .getWorkItemTypeStates(childWorkItems[0].fields["System.WorkItemType"]))
+                .value;
+
+            const ganttDiagram = await mermaidJsClient.getGanttDiagram(
+                new Date(featureWorkItem!.fields["Microsoft.VSTS.Scheduling.StartDate"]),
+                workItemStates);
+
+            localStorage.setItem(LocalStorageKey.GanttDiagram, ganttDiagram.raw);
+
+            document.getElementById("mermaidJsDiagramOutput")!.replaceChildren(ganttDiagram.svg);
         }, 250);
+    }
+
+    private static allRequiredFieldsHaveValues(): boolean {
+        let allRequiredFieldsHaveValues = true;
+
+        document.querySelectorAll("#controlPanel input[required]").forEach(input => {
+            const requiredInput = input as HTMLInputElement;
+
+            if (requiredInput.value.trim() === "") {
+                const requiredInputSection = requiredInput.parentElement?.parentElement?.previousElementSibling;
+
+                const inputSectionCheckbox = requiredInputSection?.querySelector("label>input[type='checkbox']") as HTMLInputElement;
+
+                inputSectionCheckbox.checked = true;
+
+                allRequiredFieldsHaveValues = false;
+            }
+        });
+
+        return allRequiredFieldsHaveValues;
+    }
+
+    private static loadSettingsIntoHtmlInputElements(): void {
+        const flattenedSettings = flattenObject(Settings.toJson(true));
+
+        for (const [key, value] of Object.entries(flattenedSettings)) {
+            const inputElement = document.getElementById(key) as HTMLInputElement | null;
+
+            if (inputElement === null) {
+                document.getElementsByName(key).forEach(inputElement => {
+                    const radioElement = inputElement as HTMLInputElement;
+
+                    if (radioElement.value === value) {
+                        radioElement.checked = true;
+                    }
+                });
+
+                continue;
+            }
+
+            if (inputElement.type === "checkbox") {
+                inputElement.checked = value;
+            } else {
+                inputElement.value = value;
+            }
+        }
     }
 
     private static async hasInvalidContext(): Promise<boolean> {
         if (!(await Settings.azureDevOpsClient.hasValidContext())) {
             Settings.azureDevOpsClient = new AzureDevOpsClient(
                 Settings.authentication.userEmail,
-                Settings.authentication.personalAccessToken,
-                Settings.context.organizationName,
-                Settings.context.projectName);
+                Settings.authentication.personalAccessToken);
 
             if (!(await Settings.azureDevOpsClient.hasValidContext())) {
                 return true;
@@ -178,17 +194,6 @@ export class Settings {
         }
 
         return false;
-    }
-
-    private static setDropdownValue(eventTarget: HTMLInputElement, value: string) {
-        const dropdownParent = eventTarget.parentElement?.parentElement?.parentElement;
-        const selected = Object.keys(EffortUnit)
-            .find(unit => EffortUnit[unit as keyof typeof EffortUnit] === value);
-
-        if (dropdownParent) {
-            (dropdownParent.childNodes[1] as HTMLElement)
-                .innerHTML = `<input type="checkbox" /> ${selected}`;
-        }
     }
 
     private static toJson(includeAuthentication: boolean = false): ISettings {

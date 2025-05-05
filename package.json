@@ -3,9 +3,12 @@
   "version": "0.0.1",
   "scripts": {
     "build:pug": "pug --out ./dist/ ./src/index.pug",
-    "build:scss": "sass --style compressed ./src/index.scss ./dist/index.css",
+    "build:sass": "sass --style compressed ./src/index.sass ./dist/index.css",
     "build:ts": "tsc",
-    "build": "npm run build:ts && npm run build:scss && npm run build:pug"
+    "build": "npm run build:ts && npm run build:sass && npm run build:pug",
+    "watch:pug": "pug --out ./dist/ --watch ./src/",
+    "watch:sass": "sass --style compressed --watch ./src/index.sass ./dist/index.css",
+    "watch:ts": "tsc --watch"
   },
   "devDependencies": {
     "pug-cli": "^1.0.0-alpha6",
