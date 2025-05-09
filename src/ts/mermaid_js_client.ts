@@ -1,6 +1,6 @@
 import { AzureDevOpsClient } from "./azure_dev_ops_client";
 import { DiagramType, LocalStorageKey } from "./enums";
-import { IMermaidJsDiagram, IMermaidJsRenderOptions } from "./interfaces";
+import { IMermaidJsRenderOptions } from "./interfaces";
 import { Settings } from "./settings";
 import { titleToCamelCase } from "./utility";
 
@@ -35,7 +35,7 @@ window.addEventListener("resize", async () => {
         const ganttDiagram = localStorage.getItem(LocalStorageKey.GanttDiagram);
 
         document.getElementById("mermaidJsDiagramOutput")!.innerHTML =
-            (await mermaid.render("updatedGraph", ganttDiagram!)).svg;
+            (await mermaid.render("ganttDiagram", ganttDiagram!)).svg;
     }
 });
 
@@ -68,25 +68,12 @@ export class MermaidJsClient {
         });
     }
 
-    static async renderDiagramFromLocalStorage() {
-        const localStorageDiagram = Settings.userInterface.diagramType === DiagramType.Gantt
-            ? localStorage.getItem(LocalStorageKey.GanttDiagram)
-            : localStorage.getItem(LocalStorageKey.DependencyDiagram);
-
-        if (!localStorageDiagram) {
-            return;
-        }
-
-        document.getElementById("mermaidJsDiagramOutput")!
-            .innerHTML = (await mermaid.render("updatedGraph", localStorageDiagram!)).svg;
-    }
-
     /**
      * Get Mermaid JS flowchart showing dependencies hierarchy for the Azure DevOps work items.
      * @returns Mermaid JS flowchart showing a dependency hierarchy diagram.
      */
-    getDependencyDiagram(): string {
-        let dependencyDiagram = "flowchart TD\n";
+    async getDependencyDiagram(): Promise<HTMLElement> {
+        let dependencyDiagram = "flowchart LR\n";
 
         dependencyDiagram += this.dependencyGraphNodes
             .map(node => {
@@ -102,7 +89,8 @@ export class MermaidJsClient {
                 `    ${parentWorkItem.id} --> ${node.workItem.id}`))
             .join('\n');
 
-        return dependencyDiagram;
+        return await MermaidJsClient
+            .renderDiagramSvg("dependencyDiagram", dependencyDiagram);
     }
 
     /**
@@ -110,7 +98,7 @@ export class MermaidJsClient {
      * @param featureStartDate Start date of the Azure DevOps feature.
      * @returns Mermaid JS gantt chart showing a schedule diagram.
      */
-    async getGanttDiagram(featureStartDate: Date, workItemStates: any[]): Promise<IMermaidJsDiagram> {
+    async getGanttDiagram(featureStartDate: Date, workItemStates: any[]): Promise<HTMLElement> {
         const defaultWorkItemSection = "Default";
         const featureStartId = "featureStart";
 
@@ -187,19 +175,20 @@ export class MermaidJsClient {
                 [`    Section ${key}`].concat(value.map(line => `        ${line}`)))
             .join('\n');
 
-        const svg = await MermaidJsClient.renderDiagramSvg("ganttDiagram", ganttDiagram);
+        const ganttDiagramSvg = await MermaidJsClient
+            .renderDiagramSvg("ganttDiagram", ganttDiagram);
 
         workItemStates.forEach(workItemState => {
-            svg.querySelector("style")!.textContent += `.workItemState-${titleToCamelCase(workItemState.name)} { fill: #${workItemState.color} !important; stroke: #${workItemState.color} !important; }`;
+            ganttDiagramSvg.querySelector("style")!.textContent += `.workItemState-${titleToCamelCase(workItemState.name)} { fill: #${workItemState.color} !important; stroke: #${workItemState.color} !important; }`;
         });
 
         this.dependencyGraphNodes.forEach(node => {
-            svg.querySelector(`g>rect#id-${node.workItem.id}`)
+            ganttDiagramSvg.querySelector(`g>rect#id-${node.workItem.id}`)
                 ?.classList
                 .add("workItemState-" + titleToCamelCase(node.workItem.fields["System.State"]));
         });
 
-        return { raw: ganttDiagram, svg };
+        return ganttDiagramSvg;
     }
 
     /**
@@ -239,6 +228,12 @@ export class MermaidJsClient {
             });
     }
 
+    private static async renderDiagramSvg(diagramId: string, diagram: string): Promise<HTMLElement> {
+        return new DOMParser()
+            .parseFromString((await mermaid.render(diagramId, diagram)).svg, "image/svg+xml")
+            .documentElement;
+    }
+
     /**
      * Get a valid Mermaid JS diagram node title.
      * @param title Title to be sanitized.
@@ -246,11 +241,5 @@ export class MermaidJsClient {
      */
     private static sanitizeMermaidTitle(title: string): string {
         return title.replace(/[^a-zA-Z0-9 ]/g, (char) => `#${char.charCodeAt(0)};`);
-    }
-
-    private static async renderDiagramSvg(diagramId: string, diagram: string): Promise<HTMLElement> {
-        return new DOMParser()
-            .parseFromString((await mermaid.render(diagramId, diagram)).svg, "image/svg+xml")
-            .documentElement;
     }
 }

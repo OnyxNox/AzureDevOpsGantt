@@ -65,8 +65,7 @@ This guide assumes that you already have access to an Azure DevOps organization,
     <tr>
         <td><b>Section Tag Prefix</b></td>
         <td>
-            Azure DevOps work item tag prefix that identifies the work item's domain and the section
-            it is listed under. If no section is specified <i>Default</i> is assigned.
+            Azure DevOps work item tag prefix that identifies the work item's domain and the section it is listed under. If no section is specified <i>Default</i> is assigned.
             <br />
             <b>Example:</b> A section tag prefix of <i>Section:</i> with a work item tag of
             <i>Section:Configuration</i> would result in the work item being listed under the
@@ -77,8 +76,7 @@ This guide assumes that you already have access to an Azure DevOps organization,
     <tr>
         <td><b>Effort Field</b></td>
         <td>
-            Name of the work item field that contains the estimated amount of time it will take to
-            complete it.
+            Name of the work item field that contains the estimated amount of time it will take to complete it.
         </td>
     </tr>
     <tr>
@@ -99,8 +97,7 @@ This guide assumes that you already have access to an Azure DevOps organization,
 
 ### 1. How are work items scheduled on the gantt diagram?
 
-Work items are scheduled based on the dependency hierarchy and sorted by priority ascending then by
-effort descending. Parallel task execution is restricted by the defined _Resource Count_.
+Work items are scheduled based on the dependency hierarchy and sorted by priority ascending then by effort descending. Parallel task execution is restricted by the defined _Resource Count_.
 
 ## To Dos
 
@@ -109,13 +106,5 @@ effort descending. Parallel task execution is restricted by the defined _Resourc
 1. [ ] Allow user to have multiple saved configurations (Context + Settings).
 1. [ ] Add an information panel on the right side of the viewport to show additional details, such as the diagram's raw text, selected work item's raw response, etc.
 1. [ ] Allow user to change the tool's primary color as well as the gantt diagram's colors.
-1. [ ] Update diagram's work item node colors based on their current status.
 1. [ ] Allow the user to time travel using the [`asOf` query Parameter](https://learn.microsoft.com/en-us/azure/devops/boards/queries/wiql-syntax#query-language-overview) ([1](https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/get-work-item)) to show historical snapshots of work items.
 1. [ ] Expanding on the entry above, allow the gantt diagram to account for work items running over their estimated effort.
-
-## Developer Notes
-
-- Update the [GitHub Pages](https://onyxnox.github.io/AzureDevOpsGantt/) tool to latest `master`.
-    ```shell
-    git subtree push --prefix dist origin gh-pages
-    ```

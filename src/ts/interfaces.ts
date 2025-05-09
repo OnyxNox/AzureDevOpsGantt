@@ -1,8 +1,3 @@
-export interface IMermaidJsDiagram {
-    raw: string,
-    svg: HTMLElement,
-}
-
 export interface IMermaidJsRenderOptions {
     flowchart: { useMaxWidth: boolean },
     gantt: {

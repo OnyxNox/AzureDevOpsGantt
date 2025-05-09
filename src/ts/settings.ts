@@ -5,13 +5,19 @@ import { MermaidJsClient } from "./mermaid_js_client";
 import { flattenObject } from "./utility";
 
 /**
+ * Settings HTML input element event.
+ */
+type SettingsInputElementEvent
+    = Event & { target: HTMLInputElement & { name: keyof ISubSettings } };
+
+/**
  * Default authentication settings.
  */
 const DEFAULT_AUTHENTICATION_SETTINGS: IAuthenticationSettings =
     { cacheCredentials: false, personalAccessToken: "", userEmail: "" };
 
 /**
- * Global settings used throughout the application.
+ * Global settings.
  */
 export class Settings {
     /**
@@ -20,19 +26,28 @@ export class Settings {
     private static azureDevOpsClient: AzureDevOpsClient;
 
     /**
-     * Debounce timer identifier for a timer used to prevent too many external requests when
-     * updating settings.
+     * Debounce timer identifier used to prevent too many external requests when update setting is
+     * being called rapidly.
      */
-    private static getDebounceTimerId: number = 0;
+    private static updateSettingDebounceTimerId: number = 0;
 
+    /**
+     * Azure DevOps authentication settings.
+     */
     static authentication: IAuthenticationSettings = DEFAULT_AUTHENTICATION_SETTINGS;
 
+    /**
+     * Azure DevOps context settings.
+     */
     static context: IContextSettings = {
         featureWorkItemId: "",
         organizationName: "",
         projectName: "",
     };
 
+    /**
+     * Azure DevOps environment settings.
+     */
     static environment: IEnvironmentSettings = {
         dependencyRelation: "Tests",
         effortField: "Microsoft.VSTS.Scheduling.RemainingWork",
@@ -41,6 +56,9 @@ export class Settings {
         tagSectionPrefix: "Section:",
     };
 
+    /**
+     * User interface settings.
+     */
     static userInterface: IUserInterfaceSettings = {
         asOf: "Now",
         defaultEffort: 3,
@@ -49,9 +67,9 @@ export class Settings {
     };
 
     /**
-     * Initialize controls using the previous session's settings from local storage.
+     * Initialize controls with the previous session's values.
      */
-    public static async loadSettingsFromLocalStorage() {
+    public static async initialize() {
         const localStorageSettings: ISettings
             = JSON.parse(localStorage.getItem(LocalStorageKey.Settings) ?? "{}");
 
@@ -64,24 +82,61 @@ export class Settings {
                 userInterface: { ...Settings.userInterface, ...localStorageSettings.userInterface },
             });
 
-        Settings.loadSettingsIntoHtmlInputElements();
-
         Settings.azureDevOpsClient = new AzureDevOpsClient(
             Settings.authentication.userEmail,
             Settings.authentication.personalAccessToken);
 
-        if (!Settings.allRequiredFieldsHaveValues()) {
-            return;
+        Settings.loadSettingsIntoHtmlInputElements();
+
+        if (Settings.allRequiredFieldsHaveValues()) {
+            await Settings.updateDiagram();
         }
     }
 
     /**
      * Update setting in-memory, write settings to local storage and refresh the diagram.
      */
-    public static async updateSetting(
-        section: keyof ISettings,
-        event: Event & { target: HTMLInputElement & { name: keyof ISubSettings } },
-    ) {
+    public static async updateSetting(section: keyof ISettings, event: SettingsInputElementEvent) {
+        (Settings[section] as any)[event.target.name] = Settings.castSettingValue(event);
+
+        clearTimeout(Settings.updateSettingDebounceTimerId);
+
+        Settings.updateSettingDebounceTimerId = window.setTimeout(async () => {
+            localStorage.setItem(
+                LocalStorageKey.Settings,
+                JSON.stringify(Settings.toJson(Settings.authentication.cacheCredentials)));
+
+            await Settings.updateDiagram();
+        }, 250);
+    }
+
+    /**
+     * Check if all required input fields have a value and expand the sections with invalid fields.
+     * @returns True if all required input fields have a value, otherwise false.
+     */
+    private static allRequiredFieldsHaveValues(): boolean {
+        let allRequiredFieldsHaveValues = true;
+
+        document.querySelectorAll("#controlPanel input[required]").forEach(input => {
+            const requiredInput = input as HTMLInputElement;
+
+            if (requiredInput.value.trim() === "") {
+                const requiredInputSection = requiredInput
+                    .parentElement?.parentElement?.previousElementSibling;
+
+                const inputSectionCheckbox = requiredInputSection
+                    ?.querySelector("label>input[type='checkbox']") as HTMLInputElement;
+
+                inputSectionCheckbox.checked = true;
+
+                allRequiredFieldsHaveValues = false;
+            }
+        });
+
+        return allRequiredFieldsHaveValues;
+    }
+
+    private static castSettingValue(event: SettingsInputElementEvent): boolean | number | string {
         let value: boolean | number | string;
         switch (event.target.type) {
             case "checkbox":
@@ -96,64 +151,7 @@ export class Settings {
                 value = event.target.value;
         }
 
-        (Settings[section] as any)[event.target.name] = value;
-
-        clearTimeout(Settings.getDebounceTimerId);
-
-        // if (await Settings.hasInvalidContext()) {
-        //     return;
-        // }
-
-        Settings.getDebounceTimerId = window.setTimeout(async () => {
-            localStorage.setItem(
-                LocalStorageKey.Settings,
-                JSON.stringify(Settings.toJson(Settings.authentication.cacheCredentials)));
-
-            const featureWorkItems = await Settings.azureDevOpsClient
-                .getFeatureWorkItems(Settings.context.featureWorkItemId);
-            const featureWorkItem = featureWorkItems
-                .find(workItem => workItem.fields["System.WorkItemType"] === "Feature");
-            const childWorkItems = featureWorkItems
-                .filter(workItem => workItem.fields["System.WorkItemType"] !== "Feature");
-
-            const mermaidJsClient = new MermaidJsClient(childWorkItems);
-
-            let dependencyDiagram = mermaidJsClient.getDependencyDiagram();
-
-            localStorage.setItem(LocalStorageKey.DependencyDiagram, dependencyDiagram);
-
-            const workItemStates = (await Settings.azureDevOpsClient
-                .getWorkItemTypeStates(childWorkItems[0].fields["System.WorkItemType"]))
-                .value;
-
-            const ganttDiagram = await mermaidJsClient.getGanttDiagram(
-                new Date(featureWorkItem!.fields["Microsoft.VSTS.Scheduling.StartDate"]),
-                workItemStates);
-
-            localStorage.setItem(LocalStorageKey.GanttDiagram, ganttDiagram.raw);
-
-            document.getElementById("mermaidJsDiagramOutput")!.replaceChildren(ganttDiagram.svg);
-        }, 250);
-    }
-
-    private static allRequiredFieldsHaveValues(): boolean {
-        let allRequiredFieldsHaveValues = true;
-
-        document.querySelectorAll("#controlPanel input[required]").forEach(input => {
-            const requiredInput = input as HTMLInputElement;
-
-            if (requiredInput.value.trim() === "") {
-                const requiredInputSection = requiredInput.parentElement?.parentElement?.previousElementSibling;
-
-                const inputSectionCheckbox = requiredInputSection?.querySelector("label>input[type='checkbox']") as HTMLInputElement;
-
-                inputSectionCheckbox.checked = true;
-
-                allRequiredFieldsHaveValues = false;
-            }
-        });
-
-        return allRequiredFieldsHaveValues;
+        return value;
     }
 
     private static loadSettingsIntoHtmlInputElements(): void {
@@ -172,9 +170,7 @@ export class Settings {
                 });
 
                 continue;
-            }
-
-            if (inputElement.type === "checkbox") {
+            } else if (inputElement.type === "checkbox") {
                 inputElement.checked = value;
             } else {
                 inputElement.value = value;
@@ -182,18 +178,16 @@ export class Settings {
         }
     }
 
-    private static async hasInvalidContext(): Promise<boolean> {
+    private static async isAuthenticated(): Promise<boolean> {
         if (!(await Settings.azureDevOpsClient.hasValidContext())) {
             Settings.azureDevOpsClient = new AzureDevOpsClient(
                 Settings.authentication.userEmail,
                 Settings.authentication.personalAccessToken);
 
-            if (!(await Settings.azureDevOpsClient.hasValidContext())) {
-                return true;
-            }
+            return await Settings.azureDevOpsClient.hasValidContext();
         }
 
-        return false;
+        return true;
     }
 
     private static toJson(includeAuthentication: boolean = false): ISettings {
@@ -205,5 +199,32 @@ export class Settings {
             environment: Settings.environment,
             userInterface: Settings.userInterface,
         };
+    }
+
+    private static async updateDiagram() {
+        if (!(await Settings.isAuthenticated())) {
+            return;
+        }
+
+        const featureWorkItems = await Settings.azureDevOpsClient
+            .getFeatureWorkItems(Settings.context.featureWorkItemId);
+        const featureWorkItem = featureWorkItems
+            .find(workItem => workItem.fields["System.WorkItemType"] === "Feature");
+        const childWorkItems = featureWorkItems
+            .filter(workItem => workItem.fields["System.WorkItemType"] !== "Feature");
+
+        const mermaidJsClient = new MermaidJsClient(childWorkItems);
+
+        const workItemStates = (await Settings.azureDevOpsClient
+            .getWorkItemTypeStates(childWorkItems[0].fields["System.WorkItemType"]))
+            .value;
+
+        const diagramSvg = Settings.userInterface.diagramType === DiagramType.Gantt
+            ? await mermaidJsClient.getGanttDiagram(
+                new Date(featureWorkItem!.fields["Microsoft.VSTS.Scheduling.StartDate"]),
+                workItemStates)
+            : await mermaidJsClient.getDependencyDiagram();
+
+        document.getElementById("mermaidJsDiagramOutput")?.replaceChildren(diagramSvg);
     }
 }
