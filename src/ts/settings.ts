@@ -1,8 +1,6 @@
-import { AzureDevOpsClient } from "./azure_dev_ops_client";
 import { DiagramType, EffortUnit, LocalStorageKey } from "./enums";
-import { IWorkItemTypeState } from "./interfaces";
 import { IAuthenticationSettings, IContextSettings, IEnvironmentSettings, ISettings, ISubSettings, IUserInterfaceSettings } from "./interfaces/settings_interfaces";
-import { MermaidJsClient } from "./mermaid_js_client";
+import { MermaidJsService } from "./mermaid_js_service";
 import { flattenObject } from "./utility";
 
 /**
@@ -21,11 +19,6 @@ const DEFAULT_AUTHENTICATION_SETTINGS: IAuthenticationSettings =
  * Global settings.
  */
 export class Settings {
-    /**
-     * HTTP client used to interface with Azure DevOps APIs.
-     */
-    private static azureDevOpsClient: AzureDevOpsClient;
-
     /**
      * Debounce timer identifier used to prevent too many external requests when update setting is
      * being called rapidly.
@@ -83,14 +76,10 @@ export class Settings {
                 userInterface: { ...Settings.userInterface, ...localStorageSettings.userInterface },
             });
 
-        Settings.azureDevOpsClient = new AzureDevOpsClient(
-            Settings.authentication.userEmail,
-            Settings.authentication.personalAccessToken);
-
         Settings.loadSettingsIntoHtmlInputElements();
 
         if (Settings.allRequiredFieldsHaveValues()) {
-            await Settings.updateDiagram();
+            await MermaidJsService.refreshDiagram();
         }
     }
 
@@ -107,7 +96,7 @@ export class Settings {
                 LocalStorageKey.Settings,
                 JSON.stringify(Settings.toJson(Settings.authentication.cacheCredentials)));
 
-            await Settings.updateDiagram();
+            await MermaidJsService.refreshDiagram();
         }, 250);
     }
 
@@ -179,18 +168,6 @@ export class Settings {
         }
     }
 
-    private static async isAuthenticated(): Promise<boolean> {
-        if (!(await Settings.azureDevOpsClient.hasValidContext())) {
-            Settings.azureDevOpsClient = new AzureDevOpsClient(
-                Settings.authentication.userEmail,
-                Settings.authentication.personalAccessToken);
-
-            return await Settings.azureDevOpsClient.hasValidContext();
-        }
-
-        return true;
-    }
-
     private static toJson(includeAuthentication: boolean = false): ISettings {
         return {
             authentication: includeAuthentication
@@ -200,51 +177,5 @@ export class Settings {
             environment: Settings.environment,
             userInterface: Settings.userInterface,
         };
-    }
-
-    private static async updateDiagram() {
-        if (!(await Settings.isAuthenticated())) {
-            return;
-        }
-
-        const featureWorkItems = await Settings.azureDevOpsClient
-            .getFeatureWorkItems(Settings.context.featureWorkItemId);
-        const featureWorkItem = featureWorkItems
-            .find(workItem => workItem.fields["System.WorkItemType"] === "Feature");
-        const childWorkItems = featureWorkItems
-            .filter(workItem => workItem.fields["System.WorkItemType"] !== "Feature");
-
-        const workItemTypeStatePromises = childWorkItems.reduce((promises, childWorkItem) => {
-            const workItemType = childWorkItem.fields["System.WorkItemType"];
-
-            if (!(workItemType in promises)) {
-                promises[workItemType] = Settings.azureDevOpsClient
-                    .getWorkItemTypeStates(workItemType);
-            }
-
-            return promises;
-        }, {});
-
-        const workItemTypeStateMap: Record<string, IWorkItemTypeState> = Object.fromEntries(
-            await Promise.all(Object.entries(workItemTypeStatePromises).map(async ([workItemType, promise]) => {
-                const response = await promise as any;
-
-                return [workItemType, response.value];
-            }))
-        );
-
-        const mermaidJsClient = new MermaidJsClient(childWorkItems, workItemTypeStateMap);
-
-        const workItemStates = (await Settings.azureDevOpsClient
-            .getWorkItemTypeStates(childWorkItems[0].fields["System.WorkItemType"]))
-            .value;
-
-        const diagramSvg = Settings.userInterface.diagramType === DiagramType.Gantt
-            ? await mermaidJsClient.getGanttDiagram(
-                new Date(featureWorkItem!.fields["Microsoft.VSTS.Scheduling.StartDate"]),
-                workItemStates)
-            : await mermaidJsClient.getDependencyDiagram();
-
-        document.getElementById("mermaidJsDiagramOutput")?.replaceChildren(diagramSvg);
     }
 }

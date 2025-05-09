@@ -45,11 +45,13 @@ window.addEventListener("resize", async () => {
 export class MermaidJsClient {
     private dependencyGraphNodes: { workItem: any, parentWorkItems: any[] }[] = [];
 
+    private workItemTypeStateMap: Record<string, IWorkItemTypeState[]>;
+
     /**
      * Initialize a new instance of the {@link MermaidJsClient}.
      * @param workItems Azure DevOps work items to be graphed.
      */
-    constructor(workItems: any[], workItemTypeStateMap: Record<string, IWorkItemTypeState>) {
+    constructor(workItems: any[], workItemTypeStateMap: Record<string, IWorkItemTypeState[]>) {
         workItems.forEach(workItem => {
             const parentWorkItems = workItem
                 .relations
@@ -66,13 +68,15 @@ export class MermaidJsClient {
 
             this.dependencyGraphNodes.push({ workItem, parentWorkItems });
         });
+
+        this.workItemTypeStateMap = workItemTypeStateMap;
     }
 
     /**
      * Get Mermaid JS flowchart showing dependencies hierarchy for the Azure DevOps work items.
      * @returns Mermaid JS flowchart showing a dependency hierarchy diagram.
      */
-    async getDependencyDiagram(): Promise<HTMLElement> {
+    async renderDependencyDiagram(): Promise<HTMLElement> {
         let dependencyDiagram = "flowchart LR\n";
 
         dependencyDiagram += this.dependencyGraphNodes
@@ -80,17 +84,17 @@ export class MermaidJsClient {
                 const workItemTitle = MermaidJsClient.sanitizeMermaidTitle(
                     node.workItem.fields["System.Title"]);
 
-                return `    ${node.workItem.id}[${workItemTitle}]`;
+                return `    id-${node.workItem.id}[${workItemTitle}]`
+                    + `\n    click id-${node.workItem.id} call showWorkItemInfo(${node.workItem.id})`;
             })
             .join('\n');
 
         dependencyDiagram += '\n' + this.dependencyGraphNodes
             .flatMap(node => node.parentWorkItems.map(parentWorkItem =>
-                `    ${parentWorkItem.id} --> ${node.workItem.id}`))
+                `    id-${parentWorkItem.id} --> id-${node.workItem.id}`))
             .join('\n');
 
-        return await MermaidJsClient
-            .renderDiagramSvg("dependencyDiagram", dependencyDiagram);
+        return await MermaidJsClient.renderDiagramSvg(dependencyDiagram);
     }
 
     /**
@@ -98,7 +102,7 @@ export class MermaidJsClient {
      * @param featureStartDate Start date of the Azure DevOps feature.
      * @returns Mermaid JS gantt chart showing a schedule diagram.
      */
-    async getGanttDiagram(featureStartDate: Date, workItemStates: any[]): Promise<HTMLElement> {
+    async renderGanttDiagram(featureStartDate: Date): Promise<HTMLElement> {
         const defaultWorkItemSection = "Default";
         const featureStartId = "featureStart";
 
@@ -175,17 +179,19 @@ export class MermaidJsClient {
                 [`    Section ${key}`].concat(value.map(line => `        ${line}`)))
             .join('\n');
 
-        const ganttDiagramSvg = await MermaidJsClient
-            .renderDiagramSvg("ganttDiagram", ganttDiagram);
+        const ganttDiagramSvg = await MermaidJsClient.renderDiagramSvg(ganttDiagram);
 
-        workItemStates.forEach(workItemState => {
-            ganttDiagramSvg.querySelector("style")!.textContent += `.workItemState-${titleToCamelCase(workItemState.name)} { fill: #${workItemState.color} !important; stroke: #${workItemState.color} !important; }`;
+        Object.entries(this.workItemTypeStateMap).forEach(([workItemType, workItemTypeStates]) => {
+            workItemTypeStates.forEach(workItemTypeState => {
+                ganttDiagramSvg.querySelector("style")!.textContent +=
+                    `.workItemState-${titleToCamelCase(workItemType)}-${titleToCamelCase(workItemTypeState.name)} { fill: #${workItemTypeState.color} !important; stroke: #${workItemTypeState.color} !important; }`;
+            });
         });
 
         this.dependencyGraphNodes.forEach(node => {
             ganttDiagramSvg.querySelector(`g>rect#id-${node.workItem.id}`)
                 ?.classList
-                .add("workItemState-" + titleToCamelCase(node.workItem.fields["System.State"]));
+                .add(`workItemState-${titleToCamelCase(node.workItem.fields["System.WorkItemType"])}-${titleToCamelCase(node.workItem.fields["System.State"])}`);
         });
 
         return ganttDiagramSvg;
@@ -228,10 +234,16 @@ export class MermaidJsClient {
             });
     }
 
-    private static async renderDiagramSvg(diagramId: string, diagram: string): Promise<HTMLElement> {
-        return new DOMParser()
-            .parseFromString((await mermaid.render(diagramId, diagram)).svg, "image/svg+xml")
-            .documentElement;
+    private static async renderDiagramSvg(diagram: string): Promise<HTMLElement> {
+        const mermaidJsDiagramWrapper = document.getElementById("mermaidJsDiagramOutput")!;
+
+        const { svg, bindFunctions } = await mermaid.render("mermaidJsDiagram", diagram)
+
+        mermaidJsDiagramWrapper.innerHTML = svg;
+
+        bindFunctions?.(mermaidJsDiagramWrapper);
+
+        return mermaidJsDiagramWrapper;
     }
 
     /**
