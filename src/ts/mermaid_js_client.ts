@@ -1,6 +1,6 @@
 import { AzureDevOpsClient } from "./azure_dev_ops_client";
 import { DiagramType, LocalStorageKey } from "./enums";
-import { IMermaidJsRenderOptions } from "./interfaces";
+import { IMermaidJsRenderOptions, IWorkItemTypeState } from "./interfaces";
 import { Settings } from "./settings";
 import { titleToCamelCase } from "./utility";
 
@@ -49,7 +49,7 @@ export class MermaidJsClient {
      * Initialize a new instance of the {@link MermaidJsClient}.
      * @param workItems Azure DevOps work items to be graphed.
      */
-    constructor(workItems: any[]) {
+    constructor(workItems: any[], workItemTypeStateMap: Record<string, IWorkItemTypeState>) {
         workItems.forEach(workItem => {
             const parentWorkItems = workItem
                 .relations

@@ -1,5 +1,6 @@
 import { AzureDevOpsClient } from "./azure_dev_ops_client";
 import { DiagramType, EffortUnit, LocalStorageKey } from "./enums";
+import { IWorkItemTypeState } from "./interfaces";
 import { IAuthenticationSettings, IContextSettings, IEnvironmentSettings, ISettings, ISubSettings, IUserInterfaceSettings } from "./interfaces/settings_interfaces";
 import { MermaidJsClient } from "./mermaid_js_client";
 import { flattenObject } from "./utility";
@@ -213,7 +214,26 @@ export class Settings {
         const childWorkItems = featureWorkItems
             .filter(workItem => workItem.fields["System.WorkItemType"] !== "Feature");
 
-        const mermaidJsClient = new MermaidJsClient(childWorkItems);
+        const workItemTypeStatePromises = childWorkItems.reduce((promises, childWorkItem) => {
+            const workItemType = childWorkItem.fields["System.WorkItemType"];
+
+            if (!(workItemType in promises)) {
+                promises[workItemType] = Settings.azureDevOpsClient
+                    .getWorkItemTypeStates(workItemType);
+            }
+
+            return promises;
+        }, {});
+
+        const workItemTypeStateMap: Record<string, IWorkItemTypeState> = Object.fromEntries(
+            await Promise.all(Object.entries(workItemTypeStatePromises).map(async ([workItemType, promise]) => {
+                const response = await promise as any;
+
+                return [workItemType, response.value];
+            }))
+        );
+
+        const mermaidJsClient = new MermaidJsClient(childWorkItems, workItemTypeStateMap);
 
         const workItemStates = (await Settings.azureDevOpsClient
             .getWorkItemTypeStates(childWorkItems[0].fields["System.WorkItemType"]))

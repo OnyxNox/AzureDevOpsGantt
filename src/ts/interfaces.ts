@@ -13,3 +13,9 @@ export interface IMermaidJsRenderOptions {
     startOnLoad: boolean,
     theme: string,
 }
+
+export interface IWorkItemTypeState {
+    color: string,
+
+    name: string,
+}
