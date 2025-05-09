@@ -19,3 +19,7 @@ export interface IWorkItemTypeState {
 
     name: string,
 }
+
+export interface IWorkItemUpdate {
+
+}

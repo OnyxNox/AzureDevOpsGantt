@@ -51,7 +51,9 @@ export class MermaidJsService {
     }
 
     static async showWorkItemInfo(workItemId: number) {
-        console.log("Showing Work Item information for Work Item...", workItemId);
+        const workItemUpdates = await MermaidJsService.azureDevOpsClient.getWorkItemUpdates(workItemId);
+
+        console.log(workItemUpdates);
     }
 
     private static async isAuthenticated(): Promise<boolean> {

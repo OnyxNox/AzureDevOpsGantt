@@ -118,10 +118,9 @@ export class AzureDevOpsClient {
      * @returns Azure DevOps work items.
      */
     async getWorkItems(workItemIds: (number | string)[]): Promise<any> {
-        const workItemsUrl = `${AzureDevOpsClient.ADO_BASE_URL}`
-            + `/${Settings.context.organizationName}/${Settings.context.projectName}/_apis/wit`
-            + `/workitems?ids=${workItemIds.join(',')}&$expand=relations`
-            + `&${AzureDevOpsClient.API_VERSION}`;
+        const workItemsUrl = AzureDevOpsClient.ADO_BASE_URL
+            + `/${AzureDevOpsClient.getWorkItemsUrl()}/workitems?ids=${workItemIds.join(',')}`
+            + `&$expand=relations&${AzureDevOpsClient.API_VERSION}`;
 
         const workItems = await this.fetchJson(workItemsUrl);
 
@@ -133,9 +132,9 @@ export class AzureDevOpsClient {
      * @returns Azure DevOps work item types.
      */
     async getWorkItemTypes(): Promise<any> {
-        const workItemTypesUrl = `${AzureDevOpsClient.ADO_BASE_URL}`
-            + `/${Settings.context.organizationName}/${Settings.context.projectName}/_apis/wit`
-            + `/workitemtypes?${AzureDevOpsClient.API_VERSION}`;
+        const workItemTypesUrl = AzureDevOpsClient.ADO_BASE_URL
+            + `/${AzureDevOpsClient.getWorkItemsUrl()}/workitemtypes`
+            + `?${AzureDevOpsClient.API_VERSION}`;
 
         return await this.fetchJson(workItemTypesUrl);
     }
@@ -146,11 +145,19 @@ export class AzureDevOpsClient {
      * @returns Azure DevOps work item type states.
      */
     async getWorkItemTypeStates(workItemType: string) {
-        const workItemTypesUrl = `${AzureDevOpsClient.ADO_BASE_URL}`
-            + `/${Settings.context.organizationName}/${Settings.context.projectName}/_apis/wit`
-            + `/workitemtypes/${workItemType}/states?${AzureDevOpsClient.API_VERSION}`;
+        const workItemTypesUrl = AzureDevOpsClient.ADO_BASE_URL
+            + `/${AzureDevOpsClient.getWorkItemsUrl()}/workitemtypes/${workItemType}/states`
+            + `?${AzureDevOpsClient.API_VERSION}`;
 
         return await this.fetchJson(workItemTypesUrl);
+    }
+
+    async getWorkItemUpdates(workItemId: number | string): Promise<any> {
+        const workItemUpdatesUrl = AzureDevOpsClient.ADO_BASE_URL
+            + `/${AzureDevOpsClient.getWorkItemsUrl()}/workItems/${workItemId}/updates`
+            + `?${AzureDevOpsClient.API_VERSION}`;
+
+        return await this.fetchJson(workItemUpdatesUrl);
     }
 
     /**
@@ -166,6 +173,10 @@ export class AzureDevOpsClient {
         }
 
         return true;
+    }
+
+    private static getWorkItemsUrl(): string {
+        return `${Settings.context.organizationName}/${Settings.context.projectName}/_apis/wit`;
     }
 
     /**
