@@ -3,7 +3,6 @@ import { DiagramType, LocalStorageKey } from "./enums";
 import { IMermaidJsRenderOptions } from "./interfaces";
 import { IWorkItem, IWorkItemRelation, IWorkItemTypeState } from "./interfaces/work_item_interfaces";
 import { Settings } from "./settings";
-import { titleToCamelCase } from "./utility";
 
 /**
  * Mermaid JS render options.
@@ -105,8 +104,7 @@ export class MermaidJsClient {
 
         dependencyDiagram += this.dependencyGraphNodes
             .map(node => {
-                const workItemTitle = MermaidJsClient.sanitizeMermaidTitle(
-                    node.workItem.fields["System.Title"]);
+                const workItemTitle = node.workItem.fields["System.Title"].encodeSpecialChars();
 
                 return `    id-${node.workItem.id}[${workItemTitle}]`
                     + `\n    click id-${node.workItem.id} call showWorkItemInfo(${node.workItem.id})`;
@@ -146,14 +144,13 @@ export class MermaidJsClient {
             .sort()
             .forEach(([_projectedStartDate, workItems]) => {
                 workItems.forEach(workItem => {
-                    const workItemSection = MermaidJsClient.sanitizeMermaidTitle(workItem
+                    const workItemSection = (workItem
                         .fields["System.Tags"]
                         ?.split(';')
                         .find((tag: string) => tag.startsWith(Settings.environment.tagSectionPrefix))
                         ?.replace(Settings.environment.tagSectionPrefix, '')
-                        ?? defaultWorkItemSection);
-                    const workItemTitle = MermaidJsClient.sanitizeMermaidTitle(
-                        workItem.fields["System.Title"]);
+                        ?? defaultWorkItemSection).encodeSpecialChars();;
+                    const workItemTitle = workItem.fields["System.Title"].encodeSpecialChars();
 
                     const sectionGanttLines = ganttSections.get(workItemSection) ?? [];
 
@@ -190,14 +187,14 @@ export class MermaidJsClient {
         Object.entries(this.workItemTypeStateMap).forEach(([workItemType, workItemTypeStates]) => {
             workItemTypeStates.forEach(workItemTypeState => {
                 ganttDiagramSvg.querySelector("style")!.textContent +=
-                    `.workItemState-${titleToCamelCase(workItemType)}-${titleToCamelCase(workItemTypeState.name)} { fill: #${workItemTypeState.color} !important; stroke: #${workItemTypeState.color} !important; }`;
+                    `.workItemState-${workItemType.titleToCamelCase()}-${workItemTypeState.name.titleToCamelCase()} { fill: #${workItemTypeState.color} !important; stroke: #${workItemTypeState.color} !important; }`;
             });
         });
 
         this.dependencyGraphNodes.forEach(node => {
             ganttDiagramSvg.querySelector(`g>rect#id-${node.workItem.id}`)
                 ?.classList
-                .add(`workItemState-${titleToCamelCase(node.workItem.fields["System.WorkItemType"])}-${titleToCamelCase(node.workItem.fields["System.State"])}`);
+                .add(`workItemState-${node.workItem.fields["System.WorkItemType"].titleToCamelCase()}-${node.workItem.fields["System.State"].titleToCamelCase()}`);
         });
 
         return ganttDiagramSvg;
@@ -301,14 +298,5 @@ export class MermaidJsClient {
         bindFunctions?.(mermaidJsDiagramWrapper);
 
         return mermaidJsDiagramWrapper;
-    }
-
-    /**
-     * Get a valid Mermaid JS diagram node title.
-     * @param title Title to be sanitized.
-     * @returns Valid Mermaid JS diagram node title.
-     */
-    private static sanitizeMermaidTitle(title: string): string {
-        return title.replace(/[^a-zA-Z0-9 ]/g, (char) => `#${char.charCodeAt(0)};`);
     }
 }

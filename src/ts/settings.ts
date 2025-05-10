@@ -1,7 +1,6 @@
 import { DiagramType, EffortUnit, LocalStorageKey } from "./enums";
 import { IAuthenticationSettings, IContextSettings, IEnvironmentSettings, ISettings, ISubSettings, IUserInterfaceSettings } from "./interfaces/settings_interfaces";
 import { MermaidJsService } from "./mermaid_js_service";
-import { flattenObject } from "./utility";
 
 /**
  * Settings HTML input element event.
@@ -145,7 +144,7 @@ export class Settings {
     }
 
     private static loadSettingsIntoHtmlInputElements(): void {
-        const flattenedSettings = flattenObject(Settings.toJson(true));
+        const flattenedSettings = Settings.toJson(true).flattenObject();
 
         for (const [key, value] of Object.entries(flattenedSettings)) {
             const inputElement = document.getElementById(key) as HTMLInputElement | null;
