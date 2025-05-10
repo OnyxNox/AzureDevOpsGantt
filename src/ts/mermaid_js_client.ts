@@ -24,19 +24,19 @@ const mermaidJsRenderOptions: IMermaidJsRenderOptions = {
     theme: "dark",
 };
 
-mermaid.initialize(mermaidJsRenderOptions);
+window.mermaid.initialize(mermaidJsRenderOptions);
 
 window.addEventListener("resize", async () => {
     // `useMaxWidth` is a base diagram option but it doesn't work on the gantt diagram type.
     mermaidJsRenderOptions.gantt.useWidth = window.innerWidth;
 
-    mermaid.initialize(mermaidJsRenderOptions);
+    window.mermaid.initialize(mermaidJsRenderOptions);
 
     if (Settings.userInterface.diagramType === DiagramType.Gantt) {
         const ganttDiagram = localStorage.getItem(LocalStorageKey.GanttDiagram);
 
         document.getElementById("mermaidJsDiagramOutput")!.innerHTML =
-            (await mermaid.render("ganttDiagram", ganttDiagram!)).svg;
+            (await window.mermaid.render("ganttDiagram", ganttDiagram!)).svg;
     }
 });
 
@@ -130,8 +130,6 @@ export class MermaidJsClient {
         const defaultWorkItemSection = "Default";
         const featureStartId = "featureStart";
 
-        const completedWorkItems: any[] = [];
-        let scheduledWorkItems: any[] = [];
         const ganttSections = new Map<string, string[]>();
 
         ganttSections.set(
@@ -139,51 +137,35 @@ export class MermaidJsClient {
             [`Feature Start : milestone, id-${featureStartId}`
                 + `, ${MermaidJsClient.getDateString(new Date(this.featureStartDate))}, 1d`]);
 
+        const groupedWorkItems = this.dependencyGraphNodes
+            .map(node => node.workItem)
+            .groupBy(workItem => workItem.fields[MermaidJsClient.PROJECTED_START_DATE_FIELD_NAME].toISOString().split("T")[0]);
+
         let lastCompletedWorkItemId = featureStartId;
-        while (completedWorkItems.length < this.dependencyGraphNodes.length) {
-            const availableResourceCount = Settings.userInterface.resourceCount - scheduledWorkItems.length;
+        Object.entries(groupedWorkItems)
+            .sort()
+            .forEach(([_projectedStartDate, workItems]) => {
+                workItems.forEach(workItem => {
+                    const workItemSection = MermaidJsClient.sanitizeMermaidTitle(workItem
+                        .fields["System.Tags"]
+                        ?.split(';')
+                        .find((tag: string) => tag.startsWith(Settings.environment.tagSectionPrefix))
+                        ?.replace(Settings.environment.tagSectionPrefix, '')
+                        ?? defaultWorkItemSection);
+                    const workItemTitle = MermaidJsClient.sanitizeMermaidTitle(
+                        workItem.fields["System.Title"]);
 
-            const readyToScheduleWorkItems = this
-                .getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems)
-                .slice(0, availableResourceCount);
+                    const sectionGanttLines = ganttSections.get(workItemSection) ?? [];
 
-            readyToScheduleWorkItems.forEach(workItem => {
-                const workItemSection = MermaidJsClient.sanitizeMermaidTitle(workItem
-                    .fields["System.Tags"]
-                    ?.split(';')
-                    .find((tag: string) => tag.startsWith(Settings.environment.tagSectionPrefix))
-                    ?.replace(Settings.environment.tagSectionPrefix, '')
-                    ?? defaultWorkItemSection);
-                const workItemTitle = MermaidJsClient.sanitizeMermaidTitle(
-                    workItem.fields["System.Title"]);
+                    sectionGanttLines.push(`${workItemTitle} : id-${workItem.id}`
+                        + `, after id-${lastCompletedWorkItemId}`
+                        + `, ${workItem.fields[Settings.environment.effortField]}${Settings.environment.effortFieldUnits}`);
 
-                const sectionGanttLines = ganttSections.get(workItemSection) ?? [];
+                    ganttSections.set(workItemSection, sectionGanttLines);
+                });
 
-                sectionGanttLines.push(`${workItemTitle} : id-${workItem.id}`
-                    + `, after id-${lastCompletedWorkItemId}`
-                    + `, ${workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME]}${Settings.environment.effortFieldUnits}`);
-
-                ganttSections.set(workItemSection, sectionGanttLines);
-
-                scheduledWorkItems.push(workItem);
+                lastCompletedWorkItemId = workItems.reduce((min, workItem) => workItem.fields[Settings.environment.effortField] < min.fields[Settings.environment.effortField] ? workItem : min, workItems[0]).id;
             });
-
-            const leastScheduledEffortRemaining = Math.min(
-                ...scheduledWorkItems.map(workItem => workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME]));
-
-            scheduledWorkItems.forEach(workItem =>
-                workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] -= leastScheduledEffortRemaining);
-
-            const iterationCompletedWorkItems = scheduledWorkItems
-                .filter(workItem => workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] <= 0);
-
-            completedWorkItems.push(...iterationCompletedWorkItems);
-
-            scheduledWorkItems = scheduledWorkItems
-                .filter(workItem => workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] > 0);
-
-            lastCompletedWorkItemId = iterationCompletedWorkItems[0].id;
-        }
 
         let ganttDiagram =
             "gantt\n    dateFormat YYYY-MM-DD\n    excludes weekends\n    todayMarker off\n";
@@ -312,7 +294,7 @@ export class MermaidJsClient {
     private static async renderDiagramSvg(diagram: string): Promise<HTMLElement> {
         const mermaidJsDiagramWrapper = document.getElementById("mermaidJsDiagramOutput")!;
 
-        const { svg, bindFunctions } = await mermaid.render("mermaidJsDiagram", diagram)
+        const { svg, bindFunctions } = await window.mermaid.render("mermaidJsDiagram", diagram)
 
         mermaidJsDiagramWrapper.innerHTML = svg;
 
