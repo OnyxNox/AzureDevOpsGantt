@@ -1,6 +1,6 @@
 import { AzureDevOpsClient } from "./azure_dev_ops_client";
 import { DiagramType } from "./enums";
-import { IWorkItemTypeState } from "./interfaces";
+import { IWorkItemTypeState } from "./interfaces/work_item_interfaces";
 import { MermaidJsClient } from "./mermaid_js_client";
 import { Settings } from "./settings";
 
@@ -9,6 +9,8 @@ export class MermaidJsService {
      * HTTP client used to interface with Azure DevOps APIs.
      */
     private static azureDevOpsClient: AzureDevOpsClient;
+
+    private static mermaidJsClient: MermaidJsClient;
 
     static async refreshDiagram() {
         if (!(await MermaidJsService.isAuthenticated())) {
@@ -40,20 +42,23 @@ export class MermaidJsService {
                 return [workItemType, response.value];
             })));
 
-        const mermaidJsClient = new MermaidJsClient(childWorkItems, workItemTypeStateMap);
+        MermaidJsService.mermaidJsClient = new MermaidJsClient(
+            new Date(featureWorkItem!.fields["Microsoft.VSTS.Scheduling.StartDate"]),
+            childWorkItems,
+            workItemTypeStateMap);
 
         if (Settings.userInterface.diagramType === DiagramType.Gantt) {
-            await mermaidJsClient.renderGanttDiagram(
-                new Date(featureWorkItem!.fields["Microsoft.VSTS.Scheduling.StartDate"]));
+            await MermaidJsService.mermaidJsClient.renderGanttDiagram();
         } else {
-            await mermaidJsClient.renderDependencyDiagram();
+            await MermaidJsService.mermaidJsClient.renderDependencyDiagram();
         }
     }
 
     static async showWorkItemInfo(workItemId: number) {
-        const workItemUpdates = await MermaidJsService.azureDevOpsClient.getWorkItemUpdates(workItemId);
+        const workItem = MermaidJsService.mermaidJsClient.getWorkItem(workItemId);
 
-        console.log(workItemUpdates);
+        console.log("Start Date:", workItem.fields["ADOG.ProjectedStartDate"])
+        console.log("End Date  :", workItem.fields["ADOG.ProjectedEndDate"])
     }
 
     private static async isAuthenticated(): Promise<boolean> {

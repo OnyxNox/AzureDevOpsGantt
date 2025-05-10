@@ -1,6 +1,7 @@
 import { AzureDevOpsClient } from "./azure_dev_ops_client";
 import { DiagramType, LocalStorageKey } from "./enums";
-import { IMermaidJsRenderOptions, IWorkItemTypeState } from "./interfaces";
+import { IMermaidJsRenderOptions } from "./interfaces";
+import { IWorkItem, IWorkItemRelation, IWorkItemTypeState } from "./interfaces/work_item_interfaces";
 import { Settings } from "./settings";
 import { titleToCamelCase } from "./utility";
 
@@ -43,7 +44,15 @@ window.addEventListener("resize", async () => {
  * Client used to generate Mermaid JS diagrams.
  */
 export class MermaidJsClient {
+    private static readonly PROJECTED_END_DATE_FIELD_NAME: string = "ADOG.ProjectedEndDate";
+
+    private static readonly PROJECTED_START_DATE_FIELD_NAME: string = "ADOG.ProjectedStartDate";
+
+    private static readonly WORKING_EFFORT_FIELD_NAME: string = "ADOG.WorkingEffort";
+
     private dependencyGraphNodes: { workItem: any, parentWorkItems: any[] }[] = [];
+
+    private featureStartDate: Date;
 
     private workItemTypeStateMap: Record<string, IWorkItemTypeState[]>;
 
@@ -51,25 +60,40 @@ export class MermaidJsClient {
      * Initialize a new instance of the {@link MermaidJsClient}.
      * @param workItems Azure DevOps work items to be graphed.
      */
-    constructor(workItems: any[], workItemTypeStateMap: Record<string, IWorkItemTypeState[]>) {
+    constructor(
+        featureStartDate: Date,
+        workItems: IWorkItem[],
+        workItemTypeStateMap: Record<string, IWorkItemTypeState[]>) {
+        this.featureStartDate = featureStartDate;
+
         workItems.forEach(workItem => {
             const parentWorkItems = workItem
                 .relations
-                .filter((workItemRelation: any) =>
+                .filter((workItemRelation: IWorkItemRelation) =>
                     workItemRelation.attributes.name === Settings.environment.dependencyRelation)
-                .map((dependencyWorkItemRelation: any) =>
+                .map((dependencyWorkItemRelation: IWorkItemRelation) =>
                     AzureDevOpsClient.getWorkItemIdFromUrl(dependencyWorkItemRelation.url))
                 .map((dependencyWorkItemId: number) =>
-                    workItems.find((workItem: any) => workItem.id === dependencyWorkItemId));
+                    workItems.find((workItem: IWorkItem) => workItem.id === dependencyWorkItemId));
 
-            workItem.fields[Settings.environment.effortField] = isNaN(workItem.fields[Settings.environment.effortField])
+            const effort = workItem.fields[Settings.environment.effortField];
+
+            workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] = isNaN(effort)
                 ? Settings.userInterface.defaultEffort
-                : workItem.fields[Settings.environment.effortField];
+                : effort;
+            workItem.fields[Settings.environment.effortField]
+                = workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME];
 
             this.dependencyGraphNodes.push({ workItem, parentWorkItems });
         });
 
         this.workItemTypeStateMap = workItemTypeStateMap;
+
+        this.calculateWorkItemStartEndDates();
+    }
+
+    getWorkItem(workItemId: number): IWorkItem {
+        return this.dependencyGraphNodes.find(node => node.workItem.id == workItemId)?.workItem;
     }
 
     /**
@@ -102,18 +126,18 @@ export class MermaidJsClient {
      * @param featureStartDate Start date of the Azure DevOps feature.
      * @returns Mermaid JS gantt chart showing a schedule diagram.
      */
-    async renderGanttDiagram(featureStartDate: Date): Promise<HTMLElement> {
+    async renderGanttDiagram(): Promise<HTMLElement> {
         const defaultWorkItemSection = "Default";
         const featureStartId = "featureStart";
 
         const completedWorkItems: any[] = [];
         let scheduledWorkItems: any[] = [];
-        const ganttLines = new Map<string, string[]>();
+        const ganttSections = new Map<string, string[]>();
 
-        ganttLines.set(
+        ganttSections.set(
             "Milestone",
             [`Feature Start : milestone, id-${featureStartId}`
-                + `, ${MermaidJsClient.getDateString(new Date(featureStartDate))}, 1d`]);
+                + `, ${MermaidJsClient.getDateString(new Date(this.featureStartDate))}, 1d`]);
 
         let lastCompletedWorkItemId = featureStartId;
         while (completedWorkItems.length < this.dependencyGraphNodes.length) {
@@ -133,30 +157,30 @@ export class MermaidJsClient {
                 const workItemTitle = MermaidJsClient.sanitizeMermaidTitle(
                     workItem.fields["System.Title"]);
 
-                const sectionGanttLines = ganttLines.get(workItemSection) ?? [];
+                const sectionGanttLines = ganttSections.get(workItemSection) ?? [];
 
                 sectionGanttLines.push(`${workItemTitle} : id-${workItem.id}`
                     + `, after id-${lastCompletedWorkItemId}`
-                    + `, ${workItem.fields[Settings.environment.effortField]}${Settings.environment.effortFieldUnits}`);
+                    + `, ${workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME]}${Settings.environment.effortFieldUnits}`);
 
-                ganttLines.set(workItemSection, sectionGanttLines);
+                ganttSections.set(workItemSection, sectionGanttLines);
 
                 scheduledWorkItems.push(workItem);
             });
 
             const leastScheduledEffortRemaining = Math.min(
-                ...scheduledWorkItems.map(workItem => workItem.fields[Settings.environment.effortField]));
+                ...scheduledWorkItems.map(workItem => workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME]));
 
             scheduledWorkItems.forEach(workItem =>
-                workItem.fields[Settings.environment.effortField] -= leastScheduledEffortRemaining);
+                workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] -= leastScheduledEffortRemaining);
 
             const iterationCompletedWorkItems = scheduledWorkItems
-                .filter(workItem => workItem.fields[Settings.environment.effortField] <= 0);
+                .filter(workItem => workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] <= 0);
 
             completedWorkItems.push(...iterationCompletedWorkItems);
 
             scheduledWorkItems = scheduledWorkItems
-                .filter(workItem => workItem.fields[Settings.environment.effortField] > 0);
+                .filter(workItem => workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] > 0);
 
             lastCompletedWorkItemId = iterationCompletedWorkItems[0].id;
         }
@@ -164,7 +188,7 @@ export class MermaidJsClient {
         let ganttDiagram =
             "gantt\n    dateFormat YYYY-MM-DD\n    excludes weekends\n    todayMarker off\n";
 
-        ganttDiagram += Array.from(ganttLines.entries())
+        ganttDiagram += Array.from(ganttSections.entries())
             .sort(([sectionTitleA], [sectionTitleB]) => {
                 if (sectionTitleA === "Milestone") return -1;
                 if (sectionTitleB === "Milestone") return 1;
@@ -210,6 +234,57 @@ export class MermaidJsClient {
         return `${year}-${month}-${day}`;
     }
 
+    private static addBusinessDays(date: Date, dayCount: number): Date {
+        const newDate = new Date(date);
+
+        while (dayCount > 0) {
+            newDate.setDate(newDate.getDate() + 1);
+
+            dayCount -= (newDate.getDay() % 6 !== 0) ? 1 : 0; // Skip weekends (6 = Sat; 0 = Sun)
+        }
+
+        return newDate;
+    }
+
+    private calculateWorkItemStartEndDates() {
+        const completedWorkItems: IWorkItem[] = [];
+        let scheduledWorkItems: IWorkItem[] = [];
+
+        let earliestWorkItemProjectedEndDate = this.featureStartDate;
+        while (completedWorkItems.length < this.dependencyGraphNodes.length) {
+            const availableResourceCount = Settings.userInterface.resourceCount - scheduledWorkItems.length;
+
+            const readyToScheduleWorkItems = this
+                .getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems)
+                .slice(0, availableResourceCount);
+
+            readyToScheduleWorkItems.forEach(workItem => {
+                workItem.fields[MermaidJsClient.PROJECTED_START_DATE_FIELD_NAME] = earliestWorkItemProjectedEndDate;
+
+                workItem.fields[MermaidJsClient.PROJECTED_END_DATE_FIELD_NAME] = MermaidJsClient
+                    .addBusinessDays(earliestWorkItemProjectedEndDate, workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME]);
+
+                scheduledWorkItems.push(workItem);
+            });
+
+            const leastScheduledEffortRemaining = Math.min(
+                ...scheduledWorkItems.map(workItem => workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME]));
+
+            scheduledWorkItems.forEach(workItem =>
+                workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] -= leastScheduledEffortRemaining);
+
+            const iterationCompletedWorkItems = scheduledWorkItems
+                .filter(workItem => workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] <= 0);
+
+            completedWorkItems.push(...iterationCompletedWorkItems);
+
+            scheduledWorkItems = scheduledWorkItems
+                .filter(workItem => workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] > 0);
+
+            earliestWorkItemProjectedEndDate = iterationCompletedWorkItems[0].fields[MermaidJsClient.PROJECTED_END_DATE_FIELD_NAME];
+        }
+    }
+
     /**
      * Get collection of Azure DevOps work items that are ready to be scheduled.
      * Work items are ordered by priority ascending (1..n) then effort descending (n..1).
@@ -217,7 +292,7 @@ export class MermaidJsClient {
      * @param completedWorkItems Azure DevOps work items that have already been completed.
      * @returns Collection of Azure DevOps work items that are ready to be scheduled.
      */
-    private getReadyToScheduleWorkItems(scheduledWorkItems: any[], completedWorkItems: any[]): any[] {
+    private getReadyToScheduleWorkItems(scheduledWorkItems: IWorkItem[], completedWorkItems: IWorkItem[]): IWorkItem[] {
         return this.dependencyGraphNodes
             .filter(node => !(scheduledWorkItems.includes(node.workItem)
                 || completedWorkItems.includes(node.workItem)))
