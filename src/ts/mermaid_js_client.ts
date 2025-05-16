@@ -135,7 +135,7 @@ export class MermaidJsClient {
 
         ganttSections.set(
             "Milestone",
-            [`Feature Start : milestone, id-${featureStartId}, ${new Date(this.featureStartDate).toISODateString()}, 1d`]);
+            [`Feature Start : milestone, id-${featureStartId}, ${new Date(this.featureStartDate).toISODateString()}, 0d`]);
 
         const groupedWorkItems = this.dependencyGraphNodes
             .map(node => node.workItem)
@@ -158,6 +158,8 @@ export class MermaidJsClient {
 
                     sectionGanttLines.push(`${workItemTitle} : id-${workItem.id}, after id-${lastCompletedWorkItemId}`
                         + `, ${workItem.fields[Settings.environment.effortField]}${Settings.environment.effortFieldUnits}`);
+
+                    sectionGanttLines.push(`click id-${workItem.id} call showWorkItemInfo(${workItem.id})`);
 
                     ganttSections.set(workItemSection, sectionGanttLines);
                 });
