@@ -22,20 +22,6 @@ Date.prototype.toISODateString = function (): string {
     return this.toISOString().split("T")[0];
 }
 
-Object.prototype.flattenObject = function (this: Record<string, any>): Record<string, any> {
-    let flattenedObject: Record<string, any> = {};
-
-    Object.keys(this).forEach(key => {
-        if (this[key] !== null && typeof this[key] === "object") {
-            Object.assign(flattenedObject, this[key].flattenObject());
-        } else {
-            flattenedObject[key] = this[key];
-        }
-    });
-
-    return flattenedObject;
-}
-
 String.prototype.encodeSpecialChars = function (): string {
     return this.replace(/[^a-zA-Z0-9 ]/g, (char) => `#${char.charCodeAt(0)};`);
 }

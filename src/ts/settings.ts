@@ -143,8 +143,22 @@ export class Settings {
         return value;
     }
 
+    private static flattenObject(obj: Record<string, any>): Record<string, any> {
+        let flattenedObject: Record<string, any> = {};
+
+        Object.keys(obj).forEach(key => {
+            if (obj[key] !== null && typeof obj[key] === "object") {
+                Object.assign(flattenedObject, Settings.flattenObject(obj[key]));
+            } else {
+                flattenedObject[key] = obj[key];
+            }
+        });
+
+        return flattenedObject;
+    }
+
     private static loadSettingsIntoHtmlInputElements(): void {
-        const flattenedSettings = Settings.toJson(true).flattenObject();
+        const flattenedSettings = Settings.flattenObject(Settings.toJson(true));
 
         for (const [key, value] of Object.entries(flattenedSettings)) {
             const inputElement = document.getElementById(key) as HTMLInputElement | null;

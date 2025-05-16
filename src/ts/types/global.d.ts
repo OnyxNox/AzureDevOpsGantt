@@ -11,10 +11,6 @@ declare global {
         toISODateString(): string;
     }
 
-    interface Object {
-        flattenObject(): Record<string, any>,
-    }
-
     interface String {
         encodeSpecialChars(): string;
 
