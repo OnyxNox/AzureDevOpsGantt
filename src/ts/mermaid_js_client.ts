@@ -47,9 +47,11 @@ export class MermaidJsClient {
 
     private static readonly PROJECTED_START_DATE_FIELD_NAME: string = "ADOG.ProjectedStartDate";
 
+    private static readonly STATE_DURATION_MAP_FIELD_NAME: string = "ADOG.StateDurationMap";
+
     private static readonly WORKING_EFFORT_FIELD_NAME: string = "ADOG.WorkingEffort";
 
-    private dependencyGraphNodes: { workItem: any, parentWorkItems: any[] }[] = [];
+    private dependencyGraphNodes: { workItem: IWorkItem, parentWorkItems: any[] }[] = [];
 
     private featureStartDate: Date;
 
@@ -88,10 +90,11 @@ export class MermaidJsClient {
 
         this.workItemTypeStateMap = workItemTypeStateMap;
 
-        this.calculateWorkItemStartEndDates();
+        this.calculateWorkItemsStartEndDates();
+        this.calculateWorkItemsStateDurationMap();
     }
 
-    getWorkItem(workItemId: number): IWorkItem {
+    getWorkItem(workItemId: number): IWorkItem | undefined {
         return this.dependencyGraphNodes.find(node => node.workItem.id == workItemId)?.workItem;
     }
 
@@ -132,12 +135,11 @@ export class MermaidJsClient {
 
         ganttSections.set(
             "Milestone",
-            [`Feature Start : milestone, id-${featureStartId}`
-                + `, ${MermaidJsClient.getDateString(new Date(this.featureStartDate))}, 1d`]);
+            [`Feature Start : milestone, id-${featureStartId}, ${new Date(this.featureStartDate).toISODateString()}, 1d`]);
 
         const groupedWorkItems = this.dependencyGraphNodes
             .map(node => node.workItem)
-            .groupBy(workItem => workItem.fields[MermaidJsClient.PROJECTED_START_DATE_FIELD_NAME].toISOString().split("T")[0]);
+            .groupBy(workItem => workItem.fields[MermaidJsClient.PROJECTED_START_DATE_FIELD_NAME].toISODateString());
 
         let lastCompletedWorkItemId = featureStartId;
         Object.entries(groupedWorkItems)
@@ -154,14 +156,17 @@ export class MermaidJsClient {
 
                     const sectionGanttLines = ganttSections.get(workItemSection) ?? [];
 
-                    sectionGanttLines.push(`${workItemTitle} : id-${workItem.id}`
-                        + `, after id-${lastCompletedWorkItemId}`
+                    sectionGanttLines.push(`${workItemTitle} : id-${workItem.id}, after id-${lastCompletedWorkItemId}`
                         + `, ${workItem.fields[Settings.environment.effortField]}${Settings.environment.effortFieldUnits}`);
 
                     ganttSections.set(workItemSection, sectionGanttLines);
                 });
 
-                lastCompletedWorkItemId = workItems.reduce((min, workItem) => workItem.fields[Settings.environment.effortField] < min.fields[Settings.environment.effortField] ? workItem : min, workItems[0]).id;
+                lastCompletedWorkItemId = workItems.reduce((min, workItem) =>
+                    workItem.fields[Settings.environment.effortField] < min.fields[Settings.environment.effortField]
+                        ? workItem : min, workItems[0])
+                    .id
+                    .toString();
             });
 
         let ganttDiagram =
@@ -200,32 +205,7 @@ export class MermaidJsClient {
         return ganttDiagramSvg;
     }
 
-    /**
-     * Get date string from a Date in the format of 'YYYY-MM-DD'.
-     * @param date Input date.
-     * @returns Date string in the format of 'YYYY-MM-DD'.
-     */
-    private static getDateString(date: Date): string {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-
-        return `${year}-${month}-${day}`;
-    }
-
-    private static addBusinessDays(date: Date, dayCount: number): Date {
-        const newDate = new Date(date);
-
-        while (dayCount > 0) {
-            newDate.setDate(newDate.getDate() + 1);
-
-            dayCount -= (newDate.getDay() % 6 !== 0) ? 1 : 0; // Skip weekends (6 = Sat; 0 = Sun)
-        }
-
-        return newDate;
-    }
-
-    private calculateWorkItemStartEndDates() {
+    private calculateWorkItemsStartEndDates() {
         const completedWorkItems: IWorkItem[] = [];
         let scheduledWorkItems: IWorkItem[] = [];
 
@@ -240,8 +220,8 @@ export class MermaidJsClient {
             readyToScheduleWorkItems.forEach(workItem => {
                 workItem.fields[MermaidJsClient.PROJECTED_START_DATE_FIELD_NAME] = earliestWorkItemProjectedEndDate;
 
-                workItem.fields[MermaidJsClient.PROJECTED_END_DATE_FIELD_NAME] = MermaidJsClient
-                    .addBusinessDays(earliestWorkItemProjectedEndDate, workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME]);
+                workItem.fields[MermaidJsClient.PROJECTED_END_DATE_FIELD_NAME] = earliestWorkItemProjectedEndDate
+                    .addBusinessDays(workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME]);
 
                 scheduledWorkItems.push(workItem);
             });
@@ -262,6 +242,11 @@ export class MermaidJsClient {
 
             earliestWorkItemProjectedEndDate = iterationCompletedWorkItems[0].fields[MermaidJsClient.PROJECTED_END_DATE_FIELD_NAME];
         }
+    }
+
+    private calculateWorkItemsStateDurationMap() {
+        this.dependencyGraphNodes.map(node => node.workItem).forEach(workItem => {
+        });
     }
 
     /**

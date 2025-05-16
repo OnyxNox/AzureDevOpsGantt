@@ -42,6 +42,29 @@ export class MermaidJsService {
                 return [workItemType, response.value];
             })));
 
+        const workItemsUpdates = await Promise.all(childWorkItems.map((childWorkItem) =>
+            MermaidJsService.azureDevOpsClient.getWorkItemUpdates(childWorkItem.id)));
+
+        const workItemUpdatesMap = workItemsUpdates
+            .map(workItemUpdates => workItemUpdates.value
+                .sort((a: any, b: any) => a.revisedDate.localeCompare(b.revisedDate)))
+            .map(sortedWorkItemUpdates => {
+                // Update the initial work item update that has a revisedDate of Date.Max.
+                sortedWorkItemUpdates.at(-1).revisedDate = new Date().toISOString();
+
+                return sortedWorkItemUpdates;
+            })
+            .reduce((workItemUpdatesMap, sortedWorkItemUpdates) => {
+                workItemUpdatesMap[sortedWorkItemUpdates[0].workItemId]
+                    = MermaidJsService.countStateDays(sortedWorkItemUpdates);
+
+                return workItemUpdatesMap;
+            }, {});
+
+        childWorkItems.forEach(childWorkItem => {
+            childWorkItem.fields["ADOG.UpdatesMap"] = workItemUpdatesMap[childWorkItem.id];
+        });
+
         MermaidJsService.mermaidJsClient = new MermaidJsClient(
             new Date(featureWorkItem!.fields["Microsoft.VSTS.Scheduling.StartDate"]),
             childWorkItems,
@@ -57,8 +80,9 @@ export class MermaidJsService {
     static async showWorkItemInfo(workItemId: number) {
         const workItem = MermaidJsService.mermaidJsClient.getWorkItem(workItemId);
 
-        console.log("Start Date:", workItem.fields["ADOG.ProjectedStartDate"])
-        console.log("End Date  :", workItem.fields["ADOG.ProjectedEndDate"])
+        console.log("Start Date:", workItem?.fields["ADOG.ProjectedStartDate"]);
+        console.log("End Date  :", workItem?.fields["ADOG.ProjectedEndDate"]);
+        console.log("Updates   :", workItem?.fields["ADOG.UpdatesMap"]);
     }
 
     private static async isAuthenticated(): Promise<boolean> {
@@ -71,5 +95,26 @@ export class MermaidJsService {
         }
 
         return true;
+    }
+
+    private static countStateDays(items: any[]): Record<string, number> {
+        if (items.length === 0) return {};
+
+        const stateDays: Record<string, number> = {};
+        let previousDate = new Date(items[0].revisedDate);
+        let currentState = items[0]?.fields?.["System.State"]?.newValue ?? "To Do";
+
+        for (let i = 1; i < items.length; i++) {
+            const item = items[i];
+            const currentDate = new Date(item.revisedDate);
+            const timeDifference = (currentDate.getTime() - previousDate.getTime()) / (1000 * 60 * 60 * 24); // Convert ms to days
+
+            stateDays[currentState] = (stateDays[currentState] || 0) + timeDifference;
+
+            currentState = item?.fields?.["System.State"]?.newValue ?? currentState;
+            previousDate = currentDate;
+        }
+
+        return stateDays;
     }
 }

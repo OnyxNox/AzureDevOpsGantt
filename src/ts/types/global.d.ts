@@ -5,6 +5,12 @@ declare global {
         groupBy<K extends keyof any>(key: (item: T) => K): Record<K, T[]>;
     }
 
+    interface Date {
+        addBusinessDays(count: number): Date;
+
+        toISODateString(): string;
+    }
+
     interface Object {
         flattenObject(): Record<string, any>,
     }
