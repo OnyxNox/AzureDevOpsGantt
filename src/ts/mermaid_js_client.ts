@@ -1,13 +1,12 @@
 import { AzureDevOpsClient } from "./azure_dev_ops_client";
 import { DiagramType, LocalStorageKey } from "./enums";
-import { IMermaidJsRenderOptions } from "./interfaces";
 import { IWorkItem, IWorkItemRelation, IWorkItemTypeState } from "./interfaces/work_item_interfaces";
 import { Settings } from "./settings";
 
 /**
  * Mermaid JS render options.
  */
-const mermaidJsRenderOptions: IMermaidJsRenderOptions = {
+const mermaidJsRenderOptions = {
     flowchart: { useMaxWidth: true },
     gantt: {
         barGap: 6,

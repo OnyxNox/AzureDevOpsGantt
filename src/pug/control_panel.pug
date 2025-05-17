@@ -50,19 +50,36 @@ mixin controlPanel()
                         input(type="radio" name="diagramType" value="gantt" onchange="updateSetting('userInterface', event)")
                         | Gantt
             +controlGroup("resourceCount", "Resource Count")
-                input#resourceCount(type="number" name="resourceCount" min="1" max="100" onchange="updateSetting('userInterface', event)")
+                input#resourceCount(type="number" name="resourceCount" min="1" max="100" value=1 onchange="updateSetting('userInterface', event)")
             +controlGroup("defaultEffort", "Default Effort")
-                input#defaultEffort(type="number" name="defaultEffort" min="0" max="100" onchange="updateSetting('userInterface', event)")
+                input#defaultEffort(type="number" name="defaultEffort" min="0" max="100" value=0 onchange="updateSetting('userInterface', event)")
+
+        +section("Work Item Details", show=true)
+            +controlGroup("title", "Title")
+                input#title(type="text" name="title" disabled=true value="No Work Item Selected")
+            +controlGroup("projectedStartDate", "Projected Start Date")
+                input#projectedStartDate(type="date" name="projectedStartDate" disabled=true)
+            +controlGroup("projectedEndDate", "Projected End Date")
+                input#projectedEndDate(type="date" name="projectedEndDate" disabled=true)
+            +controlGroup("estimatedEffort", "Estimated Effort")
+                input#estimatedEffort(type="number" name="estimatedEffort" min="0" max="100" value=0 disabled=true)
+            +controlGroup("actualEfforts", "Actual Efforts")
+                table
+                    thead
+                        tr
+                            th State
+                            th Day Count
+                    tbody#updatesMap
 
 mixin controlGroup(forId, label)
     .controlGroup
         label.my-2(for={forId}) #{label}
         block
 
-mixin section(title)
+mixin section(title, show=false)
     h2
         label
-            input(type="checkbox" value=title)
+            input(type="checkbox" value=title checked=show)
             | #{title}
     section
         block

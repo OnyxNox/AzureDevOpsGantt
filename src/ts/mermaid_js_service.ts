@@ -80,9 +80,36 @@ export class MermaidJsService {
     static async showWorkItemInfo(workItemId: number) {
         const workItem = MermaidJsService.mermaidJsClient.getWorkItem(workItemId);
 
-        console.log("Start Date:", workItem?.fields["ADOG.ProjectedStartDate"]);
-        console.log("End Date  :", workItem?.fields["ADOG.ProjectedEndDate"]);
-        console.log("Updates   :", workItem?.fields["ADOG.UpdatesMap"]);
+        const title = document.getElementById("title") as HTMLInputElement;
+        title.value = workItem?.fields["System.Title"] ?? "No Work Item Selected";
+
+        const projectedStartDate = document.getElementById("projectedStartDate") as HTMLInputElement;
+        projectedStartDate.value = workItem?.fields["ADOG.ProjectedStartDate"].toISODateString();
+
+        const projectedEndDate = document.getElementById("projectedEndDate") as HTMLInputElement;
+        projectedEndDate.value = workItem?.fields["ADOG.ProjectedEndDate"].toISODateString();
+
+        const estimatedEffort = document.getElementById("estimatedEffort") as HTMLInputElement;
+        estimatedEffort.value = workItem?.fields[Settings.environment.effortField] ?? 0;
+
+        const updatesMapTBody = document.createElement("tbody");
+        updatesMapTBody.id = "updatesMap";
+
+        Object.entries(workItem?.fields["ADOG.UpdatesMap"] ?? {}).forEach(([state, dayCount]) => {
+            const tableRow = document.createElement("tr");
+
+            const rowState = document.createElement("td");
+            rowState.textContent = state;
+
+            const dayCountElement = document.createElement("td");
+            dayCountElement.textContent = dayCount as string;
+
+            tableRow.appendChild(rowState);
+            tableRow.appendChild(dayCountElement);
+            updatesMapTBody.appendChild(tableRow);
+        });
+
+        document.getElementById("updatesMap")?.replaceWith(updatesMapTBody);
     }
 
     private static async isAuthenticated(): Promise<boolean> {
