@@ -90,7 +90,6 @@ export class MermaidJsClient {
         this.workItemTypeStateMap = workItemTypeStateMap;
 
         this.calculateWorkItemsStartEndDates();
-        this.calculateWorkItemsStateDurationMap();
     }
 
     getWorkItem(workItemId: number): IWorkItem | undefined {
@@ -222,7 +221,7 @@ export class MermaidJsClient {
                 workItem.fields[MermaidJsClient.PROJECTED_START_DATE_FIELD_NAME] = earliestWorkItemProjectedEndDate;
 
                 workItem.fields[MermaidJsClient.PROJECTED_END_DATE_FIELD_NAME] = earliestWorkItemProjectedEndDate
-                    .addBusinessDays(workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME]);
+                    .addBusinessDays(workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] - 1);
 
                 scheduledWorkItems.push(workItem);
             });
@@ -241,13 +240,10 @@ export class MermaidJsClient {
             scheduledWorkItems = scheduledWorkItems
                 .filter(workItem => workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] > 0);
 
-            earliestWorkItemProjectedEndDate = iterationCompletedWorkItems[0].fields[MermaidJsClient.PROJECTED_END_DATE_FIELD_NAME];
+            earliestWorkItemProjectedEndDate = iterationCompletedWorkItems[0]
+                .fields[MermaidJsClient.PROJECTED_END_DATE_FIELD_NAME]
+                .addBusinessDays(1);
         }
-    }
-
-    private calculateWorkItemsStateDurationMap() {
-        this.dependencyGraphNodes.map(node => node.workItem).forEach(workItem => {
-        });
     }
 
     /**

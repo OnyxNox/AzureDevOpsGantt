@@ -48,13 +48,13 @@ export class AzureDevOpsClient {
     /**
      * Get a collection of feature work items by its identifier.
      * @param featureWorkItemId Feature work item identifier.
-     * @param includeFeatureWorkItem Include the feature work item in the returned collection?
      * @returns Azure DevOps work items.
      */
     async getFeatureWorkItems(
-        featureWorkItemId: number | string, includeFeatureWorkItem: boolean = true
+        featureWorkItemId: number | string,
+        asOf: Date | null = null,
     ): Promise<any[]> {
-        const featureWorkItem = await this.getWorkItem(featureWorkItemId);
+        const featureWorkItem = await this.getWorkItem(featureWorkItemId, asOf);
 
         const childWorkItemIds = featureWorkItem
             .relations
@@ -63,8 +63,8 @@ export class AzureDevOpsClient {
             .map((childWorkItem: { url: string }) =>
                 AzureDevOpsClient.getWorkItemIdFromUrl(childWorkItem.url));
 
-        const featureWorkItems = includeFeatureWorkItem ? [featureWorkItem] : [];
-        featureWorkItems.push(...(await this.getWorkItems(childWorkItemIds)).value);
+        const featureWorkItems = [featureWorkItem];
+        featureWorkItems.push(...(await this.getWorkItems(childWorkItemIds, asOf)).value);
 
         return featureWorkItems;
     }
@@ -108,8 +108,8 @@ export class AzureDevOpsClient {
      * @param workItemId Work item identifier.
      * @returns Azure DevOps work item.
      */
-    async getWorkItem(workItemId: number | string): Promise<any> {
-        return (await this.getWorkItems([workItemId])).value[0];
+    async getWorkItem(workItemId: number | string, asOf: Date | null = null): Promise<any> {
+        return (await this.getWorkItems([workItemId], asOf)).value[0];
     }
 
     /**
@@ -117,10 +117,12 @@ export class AzureDevOpsClient {
      * @param workItemIds Collection of work item identifiers.
      * @returns Azure DevOps work items.
      */
-    async getWorkItems(workItemIds: (number | string)[]): Promise<any> {
+    async getWorkItems(workItemIds: (number | string)[], asOf: Date | null = null): Promise<any> {
+        const asOfQueryParam = asOf == null ? "" : `&asOf=${asOf.toISOString()}`;
+
         const workItemsUrl = AzureDevOpsClient.ADO_BASE_URL
             + `/${AzureDevOpsClient.getWorkItemsUrl()}/workitems?ids=${workItemIds.join(',')}`
-            + `&$expand=relations&${AzureDevOpsClient.API_VERSION}`;
+            + `${asOfQueryParam}&$expand=relations&${AzureDevOpsClient.API_VERSION}`;
 
         const workItems = await this.fetchJson(workItemsUrl);
 

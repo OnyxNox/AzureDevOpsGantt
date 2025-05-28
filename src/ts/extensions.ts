@@ -9,10 +9,15 @@ Array.prototype.groupBy = function <T, K extends keyof any>(key: (item: T) => K)
 Date.prototype.addBusinessDays = function (count: number): Date {
     const newDate = new Date(this);
 
-    while (count > 0) {
-        newDate.setDate(newDate.getDate() + 1);
+    const velocity = count > 0 ? 1 : -1;
 
-        count -= (newDate.getDay() % 6 !== 0) ? 1 : 0; // Skip weekends (6 = Sat; 0 = Sun)
+    let absCount = Math.abs(count);
+    while (absCount > 0) {
+        newDate.setUTCDate(newDate.getUTCDate() + velocity);
+
+        if (newDate.getUTCDay() % 6 !== 0) { // Skip weekends (6 = Sat; 0 = Sun)
+            absCount -= 1;
+        }
     }
 
     return newDate;

@@ -17,8 +17,11 @@ export class MermaidJsService {
             return;
         }
 
+        const asOf = isNaN(Date.parse(Settings.userInterface.asOf))
+            ? null : new Date(Settings.userInterface.asOf);
+
         const featureWorkItems = await MermaidJsService.azureDevOpsClient
-            .getFeatureWorkItems(Settings.context.featureWorkItemId);
+            .getFeatureWorkItems(Settings.context.featureWorkItemId, asOf);
         const featureWorkItem = featureWorkItems
             .find(workItem => workItem.fields["System.WorkItemType"] === "Feature");
         const childWorkItems = featureWorkItems
@@ -102,7 +105,7 @@ export class MermaidJsService {
             rowState.textContent = state;
 
             const dayCountElement = document.createElement("td");
-            dayCountElement.textContent = dayCount as string;
+            dayCountElement.textContent = Math.floor(dayCount as number).toString() + " Days";
 
             tableRow.appendChild(rowState);
             tableRow.appendChild(dayCountElement);

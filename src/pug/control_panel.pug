@@ -25,9 +25,6 @@ mixin controlPanel()
             +controlGroup("effortFieldUnits", "Effort Field Units")
                 .buttonRadioGroup
                     label
-                        input(type="radio" name="effortFieldUnits" value="h" onchange="updateSetting('environment', event)" disabled=true)
-                        | Hours
-                    label
                         input(type="radio" name="effortFieldUnits" value="d" onchange="updateSetting('environment', event)")
                         | Days
                     label
@@ -40,7 +37,7 @@ mixin controlPanel()
 
         +section("Configuration")
             +controlGroup("asOf", "As Of")
-                input#asOf(type="datetime" name="asOf" oninput="updateSetting('userInterface', event)")
+                input#asOf(type="datetime-local" name="asOf" oninput="updateSetting('userInterface', event)")
             +controlGroup("diagramType", "Diagram Type")
                 .buttonRadioGroup
                     label
