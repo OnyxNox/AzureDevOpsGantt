@@ -53,7 +53,9 @@ export class MermaidJsService {
                 .sort((a: any, b: any) => a.revisedDate.localeCompare(b.revisedDate)))
             .map(sortedWorkItemUpdates => {
                 // Update the initial work item update that has a revisedDate of Date.Max.
-                sortedWorkItemUpdates.at(-1).revisedDate = new Date().toISOString();
+                sortedWorkItemUpdates.at(-1).revisedDate = isNaN(Date.parse(Settings.userInterface.asOf))
+                    ? new Date().toISOString()
+                    : new Date(Settings.userInterface.asOf);
 
                 return sortedWorkItemUpdates;
             })
@@ -130,6 +132,10 @@ export class MermaidJsService {
     private static countStateDays(items: any[]): Record<string, number> {
         if (items.length === 0) return {};
 
+        if (items[0].workItemId === 2) {
+            console.log(items);
+        }
+
         const stateDays: Record<string, number> = {};
         let previousDate = new Date(items[0].revisedDate);
         let currentState = items[0]?.fields?.["System.State"]?.newValue ?? "To Do";
@@ -139,7 +145,9 @@ export class MermaidJsService {
             const currentDate = new Date(item.revisedDate);
             const timeDifference = (currentDate.getTime() - previousDate.getTime()) / (1000 * 60 * 60 * 24); // Convert ms to days
 
+            // if (timeDifference >= 0) {
             stateDays[currentState] = (stateDays[currentState] || 0) + timeDifference;
+            // }
 
             currentState = item?.fields?.["System.State"]?.newValue ?? currentState;
             previousDate = currentDate;

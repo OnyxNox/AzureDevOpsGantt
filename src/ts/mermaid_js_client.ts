@@ -122,69 +122,45 @@ export class MermaidJsClient {
 
     /**
      * Get Mermaid JS gantt chart showing a schedule for the Azure DevOps work items.
-     * @param featureStartDate Start date of the Azure DevOps feature.
      * @returns Mermaid JS gantt chart showing a schedule diagram.
      */
     async renderGanttDiagram(): Promise<HTMLElement> {
-        const defaultWorkItemSection = "Default";
-        const featureStartId = "featureStart";
+        const defaultSection = "Default";
 
-        const ganttSections = new Map<string, string[]>();
-
-        ganttSections.set(
-            "Milestone",
-            [`Feature Start : milestone, id-${featureStartId}, ${new Date(this.featureStartDate).toISODateString()}, 0d`]);
-
-        const groupedWorkItems = this.dependencyGraphNodes
+        const workItemsBySection = this.dependencyGraphNodes
             .map(node => node.workItem)
-            .groupBy(workItem => workItem.fields[MermaidJsClient.PROJECTED_START_DATE_FIELD_NAME].toISODateString());
-
-        let lastCompletedWorkItemId = featureStartId;
-        Object.entries(groupedWorkItems)
-            .sort()
-            .forEach(([_projectedStartDate, workItems]) => {
-                workItems.forEach(workItem => {
-                    const workItemSection = (workItem
-                        .fields["System.Tags"]
-                        ?.split(';')
-                        .find((tag: string) => tag.startsWith(Settings.environment.tagSectionPrefix))
-                        ?.replace(Settings.environment.tagSectionPrefix, '')
-                        ?? defaultWorkItemSection).encodeSpecialChars();;
-                    const workItemTitle = workItem.fields["System.Title"].encodeSpecialChars();
-
-                    const sectionGanttLines = ganttSections.get(workItemSection) ?? [];
-
-                    sectionGanttLines.push(`${workItemTitle} : id-${workItem.id}, after id-${lastCompletedWorkItemId}`
-                        + `, ${workItem.fields[Settings.environment.effortField]}${Settings.environment.effortFieldUnits}`);
-
-                    sectionGanttLines.push(`click id-${workItem.id} call showWorkItemInfo(${workItem.id})`);
-
-                    ganttSections.set(workItemSection, sectionGanttLines);
-                });
-
-                lastCompletedWorkItemId = workItems.reduce((min, workItem) =>
-                    workItem.fields[Settings.environment.effortField] < min.fields[Settings.environment.effortField]
-                        ? workItem : min, workItems[0])
-                    .id
-                    .toString();
-            });
+            .groupBy(workItem => workItem.fields["System.Tags"]?.split(';')
+                .find((tag: string) => tag.startsWith(Settings.environment.tagSectionPrefix))
+                ?.replace(Settings.environment.tagSectionPrefix, '') ?? defaultSection);
 
         let ganttDiagram =
             "gantt\n    dateFormat YYYY-MM-DD\n    excludes weekends\n    todayMarker off\n";
 
-        ganttDiagram += Array.from(ganttSections.entries())
-            .sort(([sectionTitleA], [sectionTitleB]) => {
-                if (sectionTitleA === "Milestone") return -1;
-                if (sectionTitleB === "Milestone") return 1;
+        ganttDiagram += Object.entries(workItemsBySection)
+            .sort(([sectionA], [sectionB]) => {
+                if (sectionA === defaultSection) return 1;
+                if (sectionB === defaultSection) return -1;
 
-                if (sectionTitleA === defaultWorkItemSection) return 1;
-                if (sectionTitleB === defaultWorkItemSection) return -1;
-
-                return sectionTitleA
-                    .localeCompare(sectionTitleB, undefined, { sensitivity: "base" });
+                return sectionA
+                    .localeCompare(sectionB, undefined, { sensitivity: "base" });
             })
-            .flatMap(([key, value]) =>
-                [`    Section ${key}`].concat(value.map(line => `        ${line}`)))
+            .map(([section, workItems]): [string, IWorkItem[]] => {
+                const sortedWorkItems = workItems.sort((workItemA, workItemB) =>
+                    workItemA.fields[MermaidJsClient.PROJECTED_START_DATE_FIELD_NAME] - workItemB.fields[MermaidJsClient.PROJECTED_START_DATE_FIELD_NAME]);
+
+                return [section, sortedWorkItems];
+            })
+            .flatMap(([section, workItems]) =>
+                [`    Section ${section.encodeSpecialChars()}`].concat(workItems.map(workItem => {
+                    const title = workItem.fields["System.Title"].encodeSpecialChars();
+                    const startDate = workItem.fields[MermaidJsClient.PROJECTED_START_DATE_FIELD_NAME].toISODateString();
+                    const effort = workItem.fields[Settings.environment.effortField] + Settings.environment.effortFieldUnits;
+
+                    const workItemLine = `${title} : id-${workItem.id}, ${startDate}, ${effort}`;
+                    const interactionLine = `click id-${workItem.id} call showWorkItemInfo(${workItem.id})`;
+
+                    return `        ${workItemLine}\n        ${interactionLine}`;
+                })))
             .join('\n');
 
         const ganttDiagramSvg = await MermaidJsClient.renderDiagramSvg(ganttDiagram);
@@ -197,9 +173,12 @@ export class MermaidJsClient {
         });
 
         this.dependencyGraphNodes.forEach(node => {
+            const workItemType = node.workItem.fields["System.WorkItemType"].titleToCamelCase();
+            const workItemState = node.workItem.fields["System.State"].titleToCamelCase();
+
             ganttDiagramSvg.querySelector(`g>rect#id-${node.workItem.id}`)
                 ?.classList
-                .add(`workItemState-${node.workItem.fields["System.WorkItemType"].titleToCamelCase()}-${node.workItem.fields["System.State"].titleToCamelCase()}`);
+                .add(`workItemState-${workItemType}-${workItemState}`);
         });
 
         return ganttDiagramSvg;
