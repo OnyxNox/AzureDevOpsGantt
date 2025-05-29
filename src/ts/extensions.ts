@@ -6,6 +6,10 @@ Array.prototype.groupBy = function <T, K extends keyof any>(key: (item: T) => K)
     }, {} as Record<K, T[]>);
 }
 
+Date.tryParse = function (date: string): Date | null {
+    return isNaN(Date.parse(date)) ? null : new Date(date);
+}
+
 Date.prototype.addBusinessDays = function (count: number): Date {
     const newDate = new Date(this);
 
@@ -21,6 +25,23 @@ Date.prototype.addBusinessDays = function (count: number): Date {
     }
 
     return newDate;
+}
+
+Date.prototype.getBusinessDayCount = function (other: Date): number {
+    const startDate = new Date(this);
+
+    const velocity = startDate < other ? 1 : -1;
+
+    let businessDayCount = 0;
+    while ((velocity === 1 && startDate <= other) || (velocity === -1 && startDate >= other)) {
+        if (startDate.getUTCDay() % 6 !== 0) {
+            businessDayCount += 1;
+        }
+
+        startDate.setUTCDate(startDate.getUTCDate() + velocity);
+    }
+
+    return businessDayCount;
 }
 
 Date.prototype.toISODateString = function (): string {

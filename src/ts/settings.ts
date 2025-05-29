@@ -27,12 +27,12 @@ export class Settings {
     /**
      * Azure DevOps authentication settings.
      */
-    static authentication: IAuthenticationSettings = DEFAULT_AUTHENTICATION_SETTINGS;
+    public static authentication: IAuthenticationSettings = DEFAULT_AUTHENTICATION_SETTINGS;
 
     /**
      * Azure DevOps context settings.
      */
-    static context: IContextSettings = {
+    public static context: IContextSettings = {
         featureWorkItemId: "",
         organizationName: "",
         projectName: "",
@@ -41,7 +41,7 @@ export class Settings {
     /**
      * Azure DevOps environment settings.
      */
-    static environment: IEnvironmentSettings = {
+    public static environment: IEnvironmentSettings = {
         dependencyRelation: "Tests",
         effortField: "Microsoft.VSTS.Scheduling.RemainingWork",
         effortFieldUnits: EffortUnit.Days,
@@ -52,8 +52,8 @@ export class Settings {
     /**
      * User interface settings.
      */
-    static userInterface: IUserInterfaceSettings = {
-        asOf: "Now",
+    public static userInterface: IUserInterfaceSettings = {
+        asOf: "",
         defaultEffort: 3,
         diagramType: DiagramType.Gantt,
         resourceCount: 1,
