@@ -101,10 +101,19 @@ Work items are scheduled based on the dependency hierarchy and sorted by priorit
 
 ## To Dos
 
-1. [ ] Allow user to create resource blockers that identify no progress will be made on assigned work items.
-1. [ ] Allow user to enable an automatic refresh so that the diagram is updated as the Azure DevOps Feature is being updated.
-1. [ ] Allow user to have multiple saved configurations (Context + Settings).
-1. [ ] Add an information panel on the right side of the viewport to show additional details, such as the diagram's raw text, selected work item's raw response, etc.
-1. [ ] Allow user to change the tool's primary color as well as the gantt diagram's colors.
-1. [ ] Allow the user to time travel using the [`asOf` query Parameter](https://learn.microsoft.com/en-us/azure/devops/boards/queries/wiql-syntax#query-language-overview) ([1](https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/get-work-item)) to show historical snapshots of work items.
-1. [ ] Expanding on the entry above, allow the gantt diagram to account for work items running over their estimated effort.
+1. Extend the gantt diagram functionality to accommodate work items that exceed their estimated effort.
+1. Introduce "Abstract" as an effort unit option, allowing users to define a custom ratio between days and effort (e.g. 1 day = 1.5 effort or 1:1.5).
+1. Enable users to integrate an Outlook calendar, allowing blockers to indicate periods where no progress will be made on assigned work items.
+1. Enable users to add an Azure DevOps backlog instead of a single feature, allowing for seamless navigation through backlog items and providing a clear view of their status and progression.
+1. Implement caching for Azure DevOps and Microsoft Graph clients to reduce unnecessary calls on each edit. Instead of in-memory caching—given the verbosity of work items and entities—utilize IndexedDB for storage.
+1. Enable users to modify work item history by adding a JSON payload within a \`\`\`adog\`\`\` code block in the comments. This allows adjustments for discrepancies between recorded progress and actual work—whether due to an absence, oversight or other unexpected factors.
+1. Allow users to maintain multiple saved configurations, including context, settings, and other preferences.
+1. Simulate the projected timeline by utilizing the As Of field to indicate which items should be in progress or completed based on the specified date.
+1. Apply a background color gradient to work items based on their state durations, visually representing their progression over time. Additionally, provide users with a toggle option to display only the current status, allowing for a clearer, more focused view when needed.
+1. Explore a method to integrate resource-specific blockers into the Outlook calendar, such as on-call shifts. This data will enable both timelines to accurately reflect periods where no progress can be made on assigned work items for specific resources.
+1. Provide an option for automatic refresh, ensuring the diagram updates in real time as changes occur in the Azure DevOps feature.
+1. Add customization options for the tool’s primary color and gantt diagram colors, giving users greater control over visual styling.
+
+## Current Goal
+
+The code is currently unpolished, a bit repetitive, and likely has room for optimization. However, as with most projects, my priority is to implement the majority of the [To Do](#to-dos) features first before refining the user interface or optimizing the code. Once the core functionality is complete, I'll shift focus to cleanup, refactoring, and polishing.
