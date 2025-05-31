@@ -1,22 +1,10 @@
 import { AzureDevOpsClient } from "./azure_dev_ops_client";
-import { DiagramType } from "./enums";
+import { AdoField, AdogField, DiagramType } from "./enums";
 import { IWorkItemTypeState } from "./interfaces/work_item_interfaces";
 import { MermaidJsClient } from "./mermaid_js_client";
 import { Settings } from "./settings";
 
 export class MermaidJsService {
-    private static readonly STATE_DURATION_MAP_FIELD: string = "ADOG.StateDurationMap";
-
-    private static readonly UPDATE_STATE_CHANGE_DATE_FIELD: string =
-        "Microsoft.VSTS.Common.StateChangeDate";
-
-    private static readonly WORK_ITEM_START_DATE_FIELD: string =
-        "Microsoft.VSTS.Scheduling.StartDate";
-
-    private static readonly WORK_ITEM_STATE_FIELD: string = "System.State";
-
-    private static readonly WORK_ITEM_TYPE_FIELD: string = "System.WorkItemType";
-
     /**
      * HTTP client used to interface with Azure DevOps APIs.
      */
@@ -35,13 +23,14 @@ export class MermaidJsService {
             return;
         }
 
+        const asOf = Date.tryParse(Settings.userInterface.asOf);
+
         const featureWorkItems = await MermaidJsService.azureDevOpsClient.getFeatureWorkItems(
-            Settings.context.featureWorkItemId,
-            Date.tryParse(Settings.userInterface.asOf));
+            Settings.context.featureWorkItemId, asOf);
         const featureWorkItem = featureWorkItems.find(workItem =>
-            workItem.fields[MermaidJsService.WORK_ITEM_TYPE_FIELD] === "Feature");
+            workItem.fields[AdoField.WorkItemType] === "Feature");
         const childWorkItems = featureWorkItems.filter(workItem =>
-            workItem.fields[MermaidJsService.WORK_ITEM_TYPE_FIELD] !== "Feature");
+            workItem.fields[AdoField.WorkItemType] !== "Feature");
 
         const workItemTypeStatesMap =
             await MermaidJsService.getWorkItemTypeStatesMap(childWorkItems);
@@ -50,13 +39,13 @@ export class MermaidJsService {
             await MermaidJsService.getWorkItemStateDurationMap(childWorkItems);
 
         childWorkItems.forEach(workItem => {
-            workItem.fields[MermaidJsService.STATE_DURATION_MAP_FIELD] =
-                workItemStateDurationMap[workItem.id];
+            workItem.fields[AdogField.StateDurationMap] = workItemStateDurationMap[workItem.id];
         });
 
+        // This is not correct, after the feature set is defined, the default should be set to the
+        // first work item's start date. What does it mean to "start"?
         const featureStartDate =
-            Date.tryParse(featureWorkItem.fields[MermaidJsService.WORK_ITEM_START_DATE_FIELD])
-            ?? new Date();
+            Date.tryParse(featureWorkItem.fields[AdoField.StartDate]) ?? asOf ?? new Date();
 
         MermaidJsService.mermaidJsClient = new MermaidJsClient(
             featureStartDate, childWorkItems, workItemTypeStatesMap);
@@ -76,13 +65,13 @@ export class MermaidJsService {
         const workItem = MermaidJsService.mermaidJsClient.getWorkItem(workItemId);
 
         const title = document.getElementById("title") as HTMLInputElement;
-        title.value = workItem?.fields["System.Title"] ?? "No Work Item Selected";
+        title.value = workItem?.fields[AdoField.Title] ?? "No Work Item Selected";
 
         const projectedStartDate = document.getElementById("projectedStartDate") as HTMLInputElement;
-        projectedStartDate.value = workItem?.fields["ADOG.ProjectedStartDate"].toISODateString();
+        projectedStartDate.value = workItem?.fields[AdogField.ProjectedStartDate].toISODateString();
 
         const projectedEndDate = document.getElementById("projectedEndDate") as HTMLInputElement;
-        projectedEndDate.value = workItem?.fields["ADOG.ProjectedEndDate"].toISODateString();
+        projectedEndDate.value = workItem?.fields[AdogField.ProjectedEndDate].toISODateString();
 
         const estimatedEffort = document.getElementById("estimatedEffort") as HTMLInputElement;
         estimatedEffort.value = workItem?.fields[Settings.environment.effortField] ?? 0;
@@ -90,7 +79,7 @@ export class MermaidJsService {
         const updatesMapTBody = document.createElement("tbody");
         updatesMapTBody.id = "updatesMap";
 
-        Object.entries(workItem?.fields[MermaidJsService.STATE_DURATION_MAP_FIELD] ?? {})
+        Object.entries(workItem?.fields[AdogField.StateDurationMap] ?? {})
             .forEach(([state, dayCount]) => {
                 const tableRow = document.createElement("tr");
 
@@ -118,7 +107,7 @@ export class MermaidJsService {
         return workItemsUpdates
             .map(workItemUpdates => {
                 workItemUpdates = workItemUpdates.value.filter((workItemUpdate: any) =>
-                    workItemUpdate?.fields?.[MermaidJsService.UPDATE_STATE_CHANGE_DATE_FIELD] !== undefined);
+                    workItemUpdate?.fields?.[AdoField.StateChangeDate] !== undefined);
 
                 const asOf = Settings.userInterface.asOf
                     ? new Date(Settings.userInterface.asOf).toISOString()
@@ -132,37 +121,37 @@ export class MermaidJsService {
 
                     const pseudoWorkItemUpdate = {
                         fields: {
-                            [MermaidJsService.UPDATE_STATE_CHANGE_DATE_FIELD]: {
-                                oldValue: workItemUpdates[0].fields[MermaidJsService.UPDATE_STATE_CHANGE_DATE_FIELD].newValue,
+                            [AdoField.StateChangeDate]: {
+                                oldValue: workItemUpdates[0].fields[AdoField.StateChangeDate].newValue,
                                 newValue: asOf,
                             },
-                            [MermaidJsService.WORK_ITEM_STATE_FIELD]: {
-                                oldValue: workItemUpdates[0].fields[MermaidJsService.WORK_ITEM_STATE_FIELD].newValue,
+                            [AdoField.State]: {
+                                oldValue: workItemUpdates[0].fields[AdoField.State].newValue,
                             },
                         },
                     };
 
                     workItemUpdates.push(pseudoWorkItemUpdate);
                 } else {
-                    workItemUpdates[0].fields[MermaidJsService.UPDATE_STATE_CHANGE_DATE_FIELD].oldValue = workItemUpdates[0].fields[MermaidJsService.UPDATE_STATE_CHANGE_DATE_FIELD].newValue;
-                    workItemUpdates[0].fields[MermaidJsService.UPDATE_STATE_CHANGE_DATE_FIELD].newValue = asOf;
-                    workItemUpdates[0].fields[MermaidJsService.WORK_ITEM_STATE_FIELD].oldValue = workItemUpdates[0].fields[MermaidJsService.WORK_ITEM_STATE_FIELD].newValue;
+                    workItemUpdates[0].fields[AdoField.StateChangeDate].oldValue = workItemUpdates[0].fields[AdoField.StateChangeDate].newValue;
+                    workItemUpdates[0].fields[AdoField.StateChangeDate].newValue = asOf;
+                    workItemUpdates[0].fields[AdoField.State].oldValue = workItemUpdates[0].fields[AdoField.State].newValue;
                 }
 
                 workItemUpdates = workItemUpdates.filter((workItemUpdate: any) =>
-                    workItemUpdate.fields[MermaidJsService.UPDATE_STATE_CHANGE_DATE_FIELD].oldValue <= asOf);
+                    workItemUpdate.fields[AdoField.StateChangeDate].oldValue <= asOf);
 
                 return workItemUpdates;
             })
             .reduce((workItemsStateDurationMap, workItemsStateUpdates) => {
                 workItemsStateDurationMap[workItemsStateUpdates[0].workItemId] = workItemsStateUpdates
                     .reduce((workItemStateDurationMap: any, workItemStateUpdate: any) => {
-                        const stateChangeDates = workItemStateUpdate!.fields![MermaidJsService.UPDATE_STATE_CHANGE_DATE_FIELD];
+                        const stateChangeDates = workItemStateUpdate!.fields![AdoField.StateChangeDate];
 
                         const stateDuration = new Date(stateChangeDates.oldValue)
                             .getBusinessDayCount(new Date(stateChangeDates.newValue)) - 1;
 
-                        const oldState = workItemStateUpdate!.fields![MermaidJsService.WORK_ITEM_STATE_FIELD].oldValue;
+                        const oldState = workItemStateUpdate!.fields![AdoField.State].oldValue;
                         workItemStateDurationMap[oldState] ??= 0;
                         workItemStateDurationMap[oldState] += stateDuration;
 
@@ -178,7 +167,7 @@ export class MermaidJsService {
      */
     private static async getWorkItemTypeStatesMap(workItems: any[]): Promise<Record<string, IWorkItemTypeState[]>> {
         const workItemTypeStatePromises = workItems.reduce((promises, workItem) => {
-            const workItemType = workItem.fields[MermaidJsService.WORK_ITEM_TYPE_FIELD];
+            const workItemType = workItem.fields[AdoField.WorkItemType];
 
             if (!(workItemType in promises)) {
                 promises[workItemType] = MermaidJsService.azureDevOpsClient

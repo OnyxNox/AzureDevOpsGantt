@@ -36,6 +36,14 @@ mixin controlPanel()
                 input#tagSectionPrefix(type="text" name="tagSectionPrefix" oninput="updateSetting('environment', event)")
 
         +section("Configuration")
+            +controlGroup("timeline", "Timeline")
+                .buttonRadioGroup
+                    label
+                        input(type="radio" name="timeline" value="actual" onchange="updateSetting('userInterface', event)")
+                        | Actual
+                    label
+                        input(type="radio" name="timeline" value="projected" onchange="updateSetting('userInterface', event)")
+                        | Projected
             +controlGroup("asOf", "As Of")
                 input#asOf(type="datetime-local" name="asOf" oninput="updateSetting('userInterface', event)")
             +controlGroup("diagramType", "Diagram Type")

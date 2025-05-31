@@ -1,5 +1,5 @@
 import { AzureDevOpsClient } from "./azure_dev_ops_client";
-import { DiagramType, LocalStorageKey } from "./enums";
+import { AdoField, AdogField, DiagramType, LocalStorageKey } from "./enums";
 import { IWorkItem, IWorkItemRelation, IWorkItemTypeState } from "./interfaces/work_item_interfaces";
 import { Settings } from "./settings";
 
@@ -42,14 +42,6 @@ window.addEventListener("resize", async () => {
  * Client used to generate Mermaid JS diagrams.
  */
 export class MermaidJsClient {
-    private static readonly PROJECTED_END_DATE_FIELD_NAME: string = "ADOG.ProjectedEndDate";
-
-    private static readonly PROJECTED_START_DATE_FIELD_NAME: string = "ADOG.ProjectedStartDate";
-
-    private static readonly STATE_DURATION_MAP_FIELD_NAME: string = "ADOG.StateDurationMap";
-
-    private static readonly WORKING_EFFORT_FIELD_NAME: string = "ADOG.WorkingEffort";
-
     private dependencyGraphNodes: { workItem: IWorkItem, parentWorkItems: any[] }[] = [];
 
     private featureStartDate: Date;
@@ -60,7 +52,7 @@ export class MermaidJsClient {
      * Initialize a new instance of the {@link MermaidJsClient}.
      * @param workItems Azure DevOps work items to be graphed.
      */
-    constructor(
+    public constructor(
         featureStartDate: Date,
         workItems: IWorkItem[],
         workItemTypeStateMap: Record<string, IWorkItemTypeState[]>) {
@@ -78,21 +70,22 @@ export class MermaidJsClient {
 
             const effort = workItem.fields[Settings.environment.effortField];
 
-            workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] = isNaN(effort)
+            workItem.fields[AdogField.WorkingEffort] = isNaN(effort)
                 ? Settings.userInterface.defaultEffort
                 : effort;
             workItem.fields[Settings.environment.effortField]
-                = workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME];
+                = workItem.fields[AdogField.WorkingEffort];
 
             this.dependencyGraphNodes.push({ workItem, parentWorkItems });
         });
 
         this.workItemTypeStateMap = workItemTypeStateMap;
 
-        this.calculateWorkItemsStartEndDates();
+        this.calculateWorkItemsProjectedStartEndDates();
+        this.calculateWorkItemsActualStartEndDates();
     }
 
-    getWorkItem(workItemId: number): IWorkItem | undefined {
+    public getWorkItem(workItemId: number): IWorkItem | undefined {
         return this.dependencyGraphNodes.find(node => node.workItem.id == workItemId)?.workItem;
     }
 
@@ -100,12 +93,12 @@ export class MermaidJsClient {
      * Get Mermaid JS flowchart showing dependencies hierarchy for the Azure DevOps work items.
      * @returns Mermaid JS flowchart showing a dependency hierarchy diagram.
      */
-    async renderDependencyDiagram(): Promise<HTMLElement> {
+    public async renderDependencyDiagram(): Promise<HTMLElement> {
         let dependencyDiagram = "flowchart LR\n";
 
         dependencyDiagram += this.dependencyGraphNodes
             .map(node => {
-                const workItemTitle = node.workItem.fields["System.Title"].encodeSpecialChars();
+                const workItemTitle = node.workItem.fields[AdoField.Title].encodeSpecialChars();
 
                 return `    id-${node.workItem.id}[${workItemTitle}]`
                     + `\n    click id-${node.workItem.id} call showWorkItemInfo(${node.workItem.id})`;
@@ -124,7 +117,7 @@ export class MermaidJsClient {
      * Get Mermaid JS gantt chart showing a schedule for the Azure DevOps work items.
      * @returns Mermaid JS gantt chart showing a schedule diagram.
      */
-    async renderGanttDiagram(): Promise<HTMLElement> {
+    public async renderGanttDiagram(): Promise<HTMLElement> {
         const defaultSection = "Default";
 
         const workItemsBySection = this.dependencyGraphNodes
@@ -146,14 +139,14 @@ export class MermaidJsClient {
             })
             .map(([section, workItems]): [string, IWorkItem[]] => {
                 const sortedWorkItems = workItems.sort((workItemA, workItemB) =>
-                    workItemA.fields[MermaidJsClient.PROJECTED_START_DATE_FIELD_NAME] - workItemB.fields[MermaidJsClient.PROJECTED_START_DATE_FIELD_NAME]);
+                    workItemA.fields[AdogField.ProjectedStartDate] - workItemB.fields[AdogField.ProjectedStartDate]);
 
                 return [section, sortedWorkItems];
             })
             .flatMap(([section, workItems]) =>
                 [`    Section ${section.encodeSpecialChars()}`].concat(workItems.map(workItem => {
-                    const title = workItem.fields["System.Title"].encodeSpecialChars();
-                    const startDate = workItem.fields[MermaidJsClient.PROJECTED_START_DATE_FIELD_NAME].toISODateString();
+                    const title = workItem.fields[AdoField.Title].encodeSpecialChars();
+                    const startDate = workItem.fields[AdogField.ProjectedStartDate].toISODateString();
                     const effort = workItem.fields[Settings.environment.effortField] + Settings.environment.effortFieldUnits;
 
                     const workItemLine = `${title} : id-${workItem.id}, ${startDate}, ${effort}`;
@@ -184,7 +177,25 @@ export class MermaidJsClient {
         return ganttDiagramSvg;
     }
 
-    private calculateWorkItemsStartEndDates() {
+    private static async renderDiagramSvg(diagram: string): Promise<HTMLElement> {
+        const mermaidJsDiagramWrapper = document.getElementById("mermaidJsDiagramOutput")!;
+
+        const { svg, bindFunctions } = await window.mermaid.render("mermaidJsDiagram", diagram)
+
+        mermaidJsDiagramWrapper.innerHTML = svg;
+
+        bindFunctions?.(mermaidJsDiagramWrapper);
+
+        return mermaidJsDiagramWrapper;
+    }
+
+    private calculateWorkItemsActualStartEndDates() {
+        // Brainstorming:
+        // "New (To Do) (First)" does not increase effort.
+        // "Removed / Done (2x Last)" does not increase effort but may reduce it when actual effort is less than the projected effort.
+        // "In Progress (Active) & Blocked" increases effort when actual effort is more than the projected effort.
+        // Each work item is "scheduled" and "completed" like in the Projected Start & End calculation.
+
         const completedWorkItems: IWorkItem[] = [];
         let scheduledWorkItems: IWorkItem[] = [];
 
@@ -197,30 +208,74 @@ export class MermaidJsClient {
                 .slice(0, availableResourceCount);
 
             readyToScheduleWorkItems.forEach(workItem => {
-                workItem.fields[MermaidJsClient.PROJECTED_START_DATE_FIELD_NAME] = earliestWorkItemProjectedEndDate;
+                workItem.fields[AdogField.ProjectedStartDate] = earliestWorkItemProjectedEndDate;
 
-                workItem.fields[MermaidJsClient.PROJECTED_END_DATE_FIELD_NAME] = earliestWorkItemProjectedEndDate
-                    .addBusinessDays(workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] - 1);
+                workItem.fields[AdogField.ProjectedEndDate] = earliestWorkItemProjectedEndDate
+                    .addBusinessDays(workItem.fields[AdogField.WorkingEffort] - 1);
 
                 scheduledWorkItems.push(workItem);
             });
 
             const leastScheduledEffortRemaining = Math.min(
-                ...scheduledWorkItems.map(workItem => workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME]));
+                ...scheduledWorkItems.map(workItem => workItem.fields[AdogField.WorkingEffort]));
 
             scheduledWorkItems.forEach(workItem =>
-                workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] -= leastScheduledEffortRemaining);
+                workItem.fields[AdogField.WorkingEffort] -= leastScheduledEffortRemaining);
 
             const iterationCompletedWorkItems = scheduledWorkItems
-                .filter(workItem => workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] <= 0);
+                .filter(workItem => workItem.fields[AdogField.WorkingEffort] <= 0);
+
+            iterationCompletedWorkItems.forEach(workItem =>
+                workItem.fields[AdogField.WorkingEffort] = workItem.fields[Settings.environment.effortField]);
 
             completedWorkItems.push(...iterationCompletedWorkItems);
 
             scheduledWorkItems = scheduledWorkItems
-                .filter(workItem => workItem.fields[MermaidJsClient.WORKING_EFFORT_FIELD_NAME] > 0);
+                .filter(workItem => workItem.fields[AdogField.WorkingEffort] > 0);
 
             earliestWorkItemProjectedEndDate = iterationCompletedWorkItems[0]
-                .fields[MermaidJsClient.PROJECTED_END_DATE_FIELD_NAME]
+                .fields[AdogField.ProjectedEndDate]
+                .addBusinessDays(1);
+        }
+    }
+
+    private calculateWorkItemsProjectedStartEndDates() {
+        const completedWorkItems: IWorkItem[] = [];
+        let scheduledWorkItems: IWorkItem[] = [];
+
+        let earliestWorkItemProjectedEndDate = this.featureStartDate;
+        while (completedWorkItems.length < this.dependencyGraphNodes.length) {
+            const availableResourceCount = Settings.userInterface.resourceCount - scheduledWorkItems.length;
+
+            const readyToScheduleWorkItems = this
+                .getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems)
+                .slice(0, availableResourceCount);
+
+            readyToScheduleWorkItems.forEach(workItem => {
+                workItem.fields[AdogField.ProjectedStartDate] = earliestWorkItemProjectedEndDate;
+
+                workItem.fields[AdogField.ProjectedEndDate] = earliestWorkItemProjectedEndDate
+                    .addBusinessDays(workItem.fields[AdogField.WorkingEffort] - 1);
+
+                scheduledWorkItems.push(workItem);
+            });
+
+            const leastScheduledEffortRemaining = Math.min(
+                ...scheduledWorkItems.map(workItem => workItem.fields[AdogField.WorkingEffort]));
+
+            scheduledWorkItems.forEach(workItem =>
+                workItem.fields[AdogField.WorkingEffort] -= leastScheduledEffortRemaining);
+
+            const iterationCompletedWorkItems = scheduledWorkItems
+                .filter(workItem => workItem.fields[AdogField.WorkingEffort] <= 0);
+
+            completedWorkItems.push(...iterationCompletedWorkItems);
+
+            scheduledWorkItems = scheduledWorkItems
+                .filter(workItem => workItem.fields[AdogField.WorkingEffort] > 0);
+
+            earliestWorkItemProjectedEndDate = iterationCompletedWorkItems[0]
+                .fields[AdogField.ProjectedEndDate]
                 .addBusinessDays(1);
         }
     }
@@ -247,17 +302,5 @@ export class MermaidJsClient {
 
                 return workItemB.fields[Settings.environment.effortField] - workItemA.fields[Settings.environment.effortField];
             });
-    }
-
-    private static async renderDiagramSvg(diagram: string): Promise<HTMLElement> {
-        const mermaidJsDiagramWrapper = document.getElementById("mermaidJsDiagramOutput")!;
-
-        const { svg, bindFunctions } = await window.mermaid.render("mermaidJsDiagram", diagram)
-
-        mermaidJsDiagramWrapper.innerHTML = svg;
-
-        bindFunctions?.(mermaidJsDiagramWrapper);
-
-        return mermaidJsDiagramWrapper;
     }
 }

@@ -111,6 +111,7 @@ Work items are scheduled based on the dependency hierarchy and sorted by priorit
 1. Simulate the projected timeline by utilizing the As Of field to indicate which items should be in progress or completed based on the specified date.
 1. Apply a background color gradient to work items based on their state durations, visually representing their progression over time. Additionally, provide users with a toggle option to display only the current status, allowing for a clearer, more focused view when needed.
 1. Explore a method to integrate resource-specific blockers into the Outlook calendar, such as on-call shifts. This data will enable both timelines to accurately reflect periods where no progress can be made on assigned work items for specific resources.
+1. Introduce a retrospective mode displaying two stacked Gantt diagrams—one illustrating the projected timeline from the feature's start date, and the other reflecting the actual timeline as of today.
 1. Provide an option for automatic refresh, ensuring the diagram updates in real time as changes occur in the Azure DevOps feature.
 1. Add customization options for the tool’s primary color and gantt diagram colors, giving users greater control over visual styling.
 

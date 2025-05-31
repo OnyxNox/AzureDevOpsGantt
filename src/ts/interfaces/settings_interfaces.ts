@@ -87,6 +87,11 @@ export interface IUserInterfaceSettings {
     diagramType: DiagramType;
 
     /**
+     * 
+     */
+    timeline: string;
+
+    /**
      * Number of resources (people) to be assigned to the feature.
      */
     resourceCount: number;

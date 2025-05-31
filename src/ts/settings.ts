@@ -1,4 +1,4 @@
-import { DiagramType, EffortUnit, LocalStorageKey } from "./enums";
+import { DiagramType, EffortUnit, LocalStorageKey, Timeline } from "./enums";
 import { IAuthenticationSettings, IContextSettings, IEnvironmentSettings, ISettings, ISubSettings, IUserInterfaceSettings } from "./interfaces/settings_interfaces";
 import { MermaidJsService } from "./mermaid_js_service";
 
@@ -56,6 +56,7 @@ export class Settings {
         asOf: "",
         defaultEffort: 3,
         diagramType: DiagramType.Gantt,
+        timeline: Timeline.Projected,
         resourceCount: 1,
     };
 
