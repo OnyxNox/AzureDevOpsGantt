@@ -7,6 +7,8 @@ export enum AdoField {
 };
 
 export enum AdogField {
+    ActualEndDate = "ADOG.ActualEndDate",
+    ActualStartDate = "ADOG.ActualStartDate",
     ProjectedEndDate = "ADOG.ProjectedEndDate",
     ProjectedStartDate = "ADOG.ProjectedStartDate",
     StateDurationMap = "ADOG.StateDurationMap",

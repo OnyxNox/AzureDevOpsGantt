@@ -35,12 +35,8 @@ export class MermaidJsService {
         const workItemTypeStatesMap =
             await MermaidJsService.getWorkItemTypeStatesMap(childWorkItems);
 
-        const workItemStateDurationMap =
-            await MermaidJsService.getWorkItemStateDurationMap(childWorkItems);
-
-        childWorkItems.forEach(workItem => {
-            workItem.fields[AdogField.StateDurationMap] = workItemStateDurationMap[workItem.id];
-        });
+        const workItemUpdates = await Promise.all(childWorkItems.map(workItem =>
+            MermaidJsService.azureDevOpsClient.getWorkItemUpdates(workItem.id)));
 
         // This is not correct, after the feature set is defined, the default should be set to the
         // first work item's start date. What does it mean to "start"?
@@ -48,7 +44,7 @@ export class MermaidJsService {
             Date.tryParse(featureWorkItem.fields[AdoField.StartDate]) ?? asOf ?? new Date();
 
         MermaidJsService.mermaidJsClient = new MermaidJsClient(
-            featureStartDate, childWorkItems, workItemTypeStatesMap);
+            featureStartDate, childWorkItems, workItemTypeStatesMap, workItemUpdates);
 
         if (Settings.userInterface.diagramType === DiagramType.Gantt) {
             await MermaidJsService.mermaidJsClient.renderGanttDiagram();
@@ -95,71 +91,6 @@ export class MermaidJsService {
             });
 
         document.getElementById("updatesMap")?.replaceWith(updatesMapTBody);
-    }
-
-    /**
-     * Get a map of work item IDs and the number of business days spent in each state.
-     */
-    private static async getWorkItemStateDurationMap(workItems: any[]) {
-        const workItemsUpdates = await Promise.all(workItems.map(workItem =>
-            MermaidJsService.azureDevOpsClient.getWorkItemUpdates(workItem.id)));
-
-        return workItemsUpdates
-            .map(workItemUpdates => {
-                workItemUpdates = workItemUpdates.value.filter((workItemUpdate: any) =>
-                    workItemUpdate?.fields?.[AdoField.StateChangeDate] !== undefined);
-
-                const asOf = Settings.userInterface.asOf
-                    ? new Date(Settings.userInterface.asOf).toISOString()
-                    : new Date().toISOString();
-
-
-                if (workItemUpdates.length > 1) {
-                    workItemUpdates.sort((a: any, b: any) => b.rev - a.rev);
-
-                    workItemUpdates.pop();
-
-                    const pseudoWorkItemUpdate = {
-                        fields: {
-                            [AdoField.StateChangeDate]: {
-                                oldValue: workItemUpdates[0].fields[AdoField.StateChangeDate].newValue,
-                                newValue: asOf,
-                            },
-                            [AdoField.State]: {
-                                oldValue: workItemUpdates[0].fields[AdoField.State].newValue,
-                            },
-                        },
-                    };
-
-                    workItemUpdates.push(pseudoWorkItemUpdate);
-                } else {
-                    workItemUpdates[0].fields[AdoField.StateChangeDate].oldValue = workItemUpdates[0].fields[AdoField.StateChangeDate].newValue;
-                    workItemUpdates[0].fields[AdoField.StateChangeDate].newValue = asOf;
-                    workItemUpdates[0].fields[AdoField.State].oldValue = workItemUpdates[0].fields[AdoField.State].newValue;
-                }
-
-                workItemUpdates = workItemUpdates.filter((workItemUpdate: any) =>
-                    workItemUpdate.fields[AdoField.StateChangeDate].oldValue <= asOf);
-
-                return workItemUpdates;
-            })
-            .reduce((workItemsStateDurationMap, workItemsStateUpdates) => {
-                workItemsStateDurationMap[workItemsStateUpdates[0].workItemId] = workItemsStateUpdates
-                    .reduce((workItemStateDurationMap: any, workItemStateUpdate: any) => {
-                        const stateChangeDates = workItemStateUpdate!.fields![AdoField.StateChangeDate];
-
-                        const stateDuration = new Date(stateChangeDates.oldValue)
-                            .getBusinessDayCount(new Date(stateChangeDates.newValue)) - 1;
-
-                        const oldState = workItemStateUpdate!.fields![AdoField.State].oldValue;
-                        workItemStateDurationMap[oldState] ??= 0;
-                        workItemStateDurationMap[oldState] += stateDuration;
-
-                        return workItemStateDurationMap;
-                    }, {});
-
-                return workItemsStateDurationMap;
-            }, {});
     }
 
     /**

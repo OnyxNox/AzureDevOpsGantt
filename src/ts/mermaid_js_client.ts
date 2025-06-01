@@ -55,8 +55,12 @@ export class MermaidJsClient {
     public constructor(
         featureStartDate: Date,
         workItems: IWorkItem[],
-        workItemTypeStateMap: Record<string, IWorkItemTypeState[]>) {
+        workItemTypeStateMap: Record<string, IWorkItemTypeState[]>,
+        workItemUpdates: any) {
         this.featureStartDate = featureStartDate;
+
+        const workItemStateDateRangesMap =
+            MermaidJsClient.getWorkItemsStateDateRangesMap(workItemUpdates);
 
         workItems.forEach(workItem => {
             const parentWorkItems = workItem
@@ -68,13 +72,15 @@ export class MermaidJsClient {
                 .map((dependencyWorkItemId: number) =>
                     workItems.find((workItem: IWorkItem) => workItem.id === dependencyWorkItemId));
 
-            const effort = workItem.fields[Settings.environment.effortField];
-
-            workItem.fields[AdogField.WorkingEffort] = isNaN(effort)
+            const workItemEffort = workItem.fields[Settings.environment.effortField];
+            workItem.fields[AdogField.WorkingEffort] = isNaN(workItemEffort)
                 ? Settings.userInterface.defaultEffort
-                : effort;
+                : workItemEffort;
+
             workItem.fields[Settings.environment.effortField]
                 = workItem.fields[AdogField.WorkingEffort];
+
+            workItem.fields[AdogField.StateDurationMap] = workItemStateDateRangesMap[workItem.id];
 
             this.dependencyGraphNodes.push({ workItem, parentWorkItems });
         });
@@ -177,6 +183,52 @@ export class MermaidJsClient {
         return ganttDiagramSvg;
     }
 
+    /**
+     * Get a map of work item state date ranges.
+     */
+    private static getWorkItemsStateDateRangesMap(workItemUpdatesMap: any): Record<number, any> {
+        const asOf = new Date(Settings.userInterface.asOf || Date.now()).toISOString();
+
+        return workItemUpdatesMap
+            // Flatten work item updates, keeping only those with a StateChangeDate field.
+            .flatMap(({ value }) => value
+                .filter(({ fields }) => fields?.[AdoField.StateChangeDate])
+                .map(({ fields, workItemId }) => ({
+                    state: fields[AdoField.State].newValue,
+                    stateChangeDate: { ...fields[AdoField.StateChangeDate] },
+                    workItemId,
+                })))
+            // Sort updates by workItemId ascending, then by start date (oldValue) descending.
+            .sort((workItemUpdateA, workItemUpdateB) =>
+                workItemUpdateA.workItemId !== workItemUpdateB.workItemId
+                    ? workItemUpdateA.workItemId - workItemUpdateB.workItemId
+                    : new Date(workItemUpdateB.stateChangeDate.oldValue).getTime() - new Date(workItemUpdateA.stateChangeDate.oldValue).getTime()
+            )
+            // Construct date ranges, by setting each update's start date to its new value and its
+            // end date to the next update's new value (when the workItemId matches) or to the asOf
+            // date if no subsequent update exists.
+            .map((workItemUpdate, updateIndex, sortedWorkItemUpdates) => ({
+                ...workItemUpdate,
+                stateChangeDate: {
+                    oldValue: workItemUpdate.stateChangeDate.newValue,
+                    newValue: sortedWorkItemUpdates[updateIndex + 1]?.workItemId === workItemUpdate.workItemId
+                        ? sortedWorkItemUpdates[updateIndex + 1].stateChangeDate.newValue
+                        : asOf,
+                },
+            }))
+            // Group state change dates by their workItemId and state.
+            .reduce((workItemsStateDateRangesMap, { state, stateChangeDate, workItemId }) => {
+                (workItemsStateDateRangesMap[workItemId] ??= {})[state] ??= [];
+
+                workItemsStateDateRangesMap[workItemId][state].push({
+                    startDate: stateChangeDate.oldValue,
+                    endDate: stateChangeDate.newValue,
+                });
+
+                return workItemsStateDateRangesMap;
+            }, {});
+    }
+
     private static async renderDiagramSvg(diagram: string): Promise<HTMLElement> {
         const mermaidJsDiagramWrapper = document.getElementById("mermaidJsDiagramOutput")!;
 
@@ -195,48 +247,50 @@ export class MermaidJsClient {
         // "Removed / Done (2x Last)" does not increase effort but may reduce it when actual effort is less than the projected effort.
         // "In Progress (Active) & Blocked" increases effort when actual effort is more than the projected effort.
         // Each work item is "scheduled" and "completed" like in the Projected Start & End calculation.
-
+        // Instead of using WorkingEffort, use ActualEffort that is pre-calculated for each work-item.
         const completedWorkItems: IWorkItem[] = [];
         let scheduledWorkItems: IWorkItem[] = [];
 
-        let earliestWorkItemProjectedEndDate = this.featureStartDate;
-        while (completedWorkItems.length < this.dependencyGraphNodes.length) {
-            const availableResourceCount = Settings.userInterface.resourceCount - scheduledWorkItems.length;
+        const asOf = new Date(Settings.userInterface.asOf || Date.now());
 
-            const readyToScheduleWorkItems = this
-                .getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems)
-                .slice(0, availableResourceCount);
+        let earliestWorkItemEndDate = this.featureStartDate;
+        // while (completedWorkItems.length < this.dependencyGraphNodes.length) {
+        const readyToScheduleWorkItems =
+            this.getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems);
 
-            readyToScheduleWorkItems.forEach(workItem => {
-                workItem.fields[AdogField.ProjectedStartDate] = earliestWorkItemProjectedEndDate;
+        readyToScheduleWorkItems.forEach(workItem => {
+            const actualStartDate = earliestWorkItemEndDate;
+            const projectedEndDate = earliestWorkItemEndDate.addBusinessDays(workItem.fields[AdogField.WorkingEffort] - 1);
 
-                workItem.fields[AdogField.ProjectedEndDate] = earliestWorkItemProjectedEndDate
-                    .addBusinessDays(workItem.fields[AdogField.WorkingEffort] - 1);
+            const workItemActiveStates = Object.entries(workItem.fields[AdogField.StateDurationMap] || {})
+                .filter(([stateName]) => stateName !== "To Do")
+                .reduce((acc, [stateName, dateRangeArray]) => {
+                    const totalDuration = (dateRangeArray as any[]).reduce((sum, { startDate, endDate }) => {
+                        const rangeStart = new Date(startDate);
+                        const rangeEnd = new Date(endDate);
+                        const clampedStart = rangeStart < earliestWorkItemEndDate ? earliestWorkItemEndDate : rangeStart;
+                        const clampedEnd = rangeEnd;
+                        if (clampedEnd > clampedStart) {
+                            const duration = Math.floor((clampedEnd.getTime() - clampedStart.getTime()) / (1000 * 60 * 60 * 24));
+                            return sum + duration;
+                        }
+                        return sum;
+                    }, 0);
+                    acc[stateName] = totalDuration;
+                    return acc;
+                }, {});
 
-                scheduledWorkItems.push(workItem);
-            });
+            const test = Object.keys(workItemActiveStates).length === 0 ? null : workItemActiveStates;
 
-            const leastScheduledEffortRemaining = Math.min(
-                ...scheduledWorkItems.map(workItem => workItem.fields[AdogField.WorkingEffort]));
+            console.log(test);
 
-            scheduledWorkItems.forEach(workItem =>
-                workItem.fields[AdogField.WorkingEffort] -= leastScheduledEffortRemaining);
+            workItem.fields[AdogField.ActualStartDate] = actualStartDate;
 
-            const iterationCompletedWorkItems = scheduledWorkItems
-                .filter(workItem => workItem.fields[AdogField.WorkingEffort] <= 0);
+            workItem.fields[AdogField.ActualEndDate] = projectedEndDate;
 
-            iterationCompletedWorkItems.forEach(workItem =>
-                workItem.fields[AdogField.WorkingEffort] = workItem.fields[Settings.environment.effortField]);
-
-            completedWorkItems.push(...iterationCompletedWorkItems);
-
-            scheduledWorkItems = scheduledWorkItems
-                .filter(workItem => workItem.fields[AdogField.WorkingEffort] > 0);
-
-            earliestWorkItemProjectedEndDate = iterationCompletedWorkItems[0]
-                .fields[AdogField.ProjectedEndDate]
-                .addBusinessDays(1);
-        }
+            scheduledWorkItems.push(workItem);
+        });
+        // }
     }
 
     private calculateWorkItemsProjectedStartEndDates() {
