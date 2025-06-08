@@ -242,97 +242,76 @@ export class MermaidJsClient {
     }
 
     private calculateWorkItemsActualStartEndDates() {
-        // Brainstorming:
-        // "New (To Do) (First)" does not increase effort.
-        // "Removed / Done (2x Last)" does not increase effort but may reduce it when actual effort is less than the projected effort.
-        // "In Progress (Active) & Blocked" increases effort when actual effort is more than the projected effort.
-        // Each work item is "scheduled" and "completed" like in the Projected Start & End calculation.
-        // Instead of using WorkingEffort, use ActualEffort that is pre-calculated for each work-item.
         const completedWorkItems: IWorkItem[] = [];
         let scheduledWorkItems: IWorkItem[] = [];
 
         const asOf = new Date(Settings.userInterface.asOf || Date.now());
 
         let earliestWorkItemEndDate = this.featureStartDate;
-        // while (completedWorkItems.length < this.dependencyGraphNodes.length) {
+
         const readyToScheduleWorkItems =
             this.getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems);
 
         readyToScheduleWorkItems.forEach(workItem => {
-            const actualStartDate = earliestWorkItemEndDate;
-            const projectedEndDate = earliestWorkItemEndDate.addBusinessDays(workItem.fields[AdogField.WorkingEffort] - 1);
-
-            const workItemActiveStates = Object.entries(workItem.fields[AdogField.StateDurationMap] || {})
-                .filter(([stateName]) => stateName !== "To Do")
-                .reduce((acc, [stateName, dateRangeArray]) => {
-                    const totalDuration = (dateRangeArray as any[]).reduce((sum, { startDate, endDate }) => {
+            const stateDurationMap = Object.entries(workItem.fields[AdogField.StateDurationMap] || {})
+                .reduce((stateDurationMap, [state, dateRanges]) => {
+                    const dateRangeDuration = (dateRanges as any[]).reduce((sum, { startDate, endDate }) => {
                         const rangeStart = new Date(startDate);
                         const rangeEnd = new Date(endDate);
                         const clampedStart = rangeStart < earliestWorkItemEndDate ? earliestWorkItemEndDate : rangeStart;
                         const clampedEnd = rangeEnd;
+
                         if (clampedEnd > clampedStart) {
-                            const duration = Math.floor((clampedEnd.getTime() - clampedStart.getTime()) / (1000 * 60 * 60 * 24));
+                            const msPerDay = 24 * 60 * 60 * 1000;
+                            const start = clampedStart.setHours(0, 0, 0, 0);
+                            const end = clampedEnd.setHours(0, 0, 0, 0);
+                            const totalDays = Math.ceil((end - start) / msPerDay);
+                            const weeks = Math.floor(totalDays / 7);
+                            const extraDays = totalDays % 7;
+                            const startDay = clampedStart.getDay();
+                            // Calculate business days in the extra days
+                            const businessDaysInExtra = Math.max(
+                                [0, 1, 2, 3, 4, 5, 6]
+                                    .slice(startDay, startDay + extraDays)
+                                    .filter(d => d !== 0 && d !== 6).length
+                                , 0);
+                            const duration = weeks * 5 + businessDaysInExtra;
                             return sum + duration;
                         }
+
                         return sum;
                     }, 0);
-                    acc[stateName] = totalDuration;
-                    return acc;
+
+                    stateDurationMap[state] ??= 0;
+                    stateDurationMap[state] += dateRangeDuration;
+
+                    return stateDurationMap;
                 }, {});
 
-            const test = Object.keys(workItemActiveStates).length === 0 ? null : workItemActiveStates;
+            const actualEffortll = Object.entries(stateDurationMap).forEach(([state, duration]) => {
+                console.log(state, duration);
+            });
 
-            console.log(test);
+            console.log(actualEffortll);
 
-            workItem.fields[AdogField.ActualStartDate] = actualStartDate;
+            const actualEffort = workItem.fields[AdogField.WorkingEffort] > stateDurationMap
+                ? workItem.fields[AdogField.WorkingEffort] : stateDurationMap;
 
-            workItem.fields[AdogField.ActualEndDate] = projectedEndDate;
+            const actualEndDate = earliestWorkItemEndDate.addBusinessDays(actualEffort);
+
+            if (stateDurationMap === 0) {
+                console.log("actualStartDate Set");
+            }
+
+            workItem.fields[AdogField.ActualStartDate] = earliestWorkItemEndDate;
+
+            workItem.fields[AdogField.ActualEndDate] = actualEndDate;
 
             scheduledWorkItems.push(workItem);
         });
-        // }
     }
 
-    private calculateWorkItemsProjectedStartEndDates() {
-        const completedWorkItems: IWorkItem[] = [];
-        let scheduledWorkItems: IWorkItem[] = [];
-
-        let earliestWorkItemProjectedEndDate = this.featureStartDate;
-        while (completedWorkItems.length < this.dependencyGraphNodes.length) {
-            const availableResourceCount = Settings.userInterface.resourceCount - scheduledWorkItems.length;
-
-            const readyToScheduleWorkItems = this
-                .getReadyToScheduleWorkItems(scheduledWorkItems, completedWorkItems)
-                .slice(0, availableResourceCount);
-
-            readyToScheduleWorkItems.forEach(workItem => {
-                workItem.fields[AdogField.ProjectedStartDate] = earliestWorkItemProjectedEndDate;
-
-                workItem.fields[AdogField.ProjectedEndDate] = earliestWorkItemProjectedEndDate
-                    .addBusinessDays(workItem.fields[AdogField.WorkingEffort] - 1);
-
-                scheduledWorkItems.push(workItem);
-            });
-
-            const leastScheduledEffortRemaining = Math.min(
-                ...scheduledWorkItems.map(workItem => workItem.fields[AdogField.WorkingEffort]));
-
-            scheduledWorkItems.forEach(workItem =>
-                workItem.fields[AdogField.WorkingEffort] -= leastScheduledEffortRemaining);
-
-            const iterationCompletedWorkItems = scheduledWorkItems
-                .filter(workItem => workItem.fields[AdogField.WorkingEffort] <= 0);
-
-            completedWorkItems.push(...iterationCompletedWorkItems);
-
-            scheduledWorkItems = scheduledWorkItems
-                .filter(workItem => workItem.fields[AdogField.WorkingEffort] > 0);
-
-            earliestWorkItemProjectedEndDate = iterationCompletedWorkItems[0]
-                .fields[AdogField.ProjectedEndDate]
-                .addBusinessDays(1);
-        }
-    }
+    private calculateWorkItemsProjectedStartEndDates() { }
 
     /**
      * Get collection of Azure DevOps work items that are ready to be scheduled.
